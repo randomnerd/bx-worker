@@ -15,10 +15,12 @@
     "url": "http://git.sickoffice.net/admin/bx-worker/issues"
   },
   "dependencies": {
+    "babel": "^5.8.21",
     "bitcoin": "^2.4.0",
     "config": "^1.15.0",
     "ddp": "git@github.com:randomnerd/node-ddp-client.git#patch-1",
     "ddp-login": "^1.0.9",
+    "es6-module-loader": "^0.17.5",
     "meteor-job": "^1.3.1",
     "winston": "^1.0.1"
   },

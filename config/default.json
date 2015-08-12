@@ -8,5 +8,21 @@
   "jobConfig": {
     "queueName": "jobQueue",
     "collectionName": "jobs"
+  },
+  "workers": {
+    "wallet": {
+      "currencies": {
+        "nkNov8f9xuYHCMjmQ": {
+          "name": "Bitcoin",
+          "rpc": {
+            "host": "rpc.blockchain.info",
+            "port": 443,
+            "ssl": true,
+            "user": "591e782b-e94e-4083-b233-1eba64700c3c",
+            "pass": "boo5nu~Ke^y1baik"
+          }
+        }
+      }
+    }
   }
 }

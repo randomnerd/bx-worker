@@ -1,3 +1,0 @@
-WalletProcessor = function() {
-  
-}
