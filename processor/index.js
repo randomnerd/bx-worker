@@ -3,38 +3,42 @@ import {WalletWorker} from './workers/wallet';
 
 export class Processor {
   constructor(ddp, config, logger) {
+    this.jc        = JobCollection;
     this.ddp       = ddp;
     this.config    = config;
     this.logger    = logger;
     this.jobConfig = config.get('jobConfig');
+    JobCollection.setDDP(this.ddp);
 
     this.runningWorkers = [];
     this.availableWorkers = [
       WalletWorker
     ]
+    this.jobTypeMap = {}
   }
 
   start() {
     this.logger.info('Starting job processing');
 
-    this.ddp.subscribe(this.jobConfig.queueName);
-    JobCollection.setDDP(this.ddp);
-
     this.startWorkers();
+    this.startObserver();
   }
 
-  setupObserver(queue, subscription) {
-    this.observer = this.ddp.observe(subscription);
+  startObserver() {
+    this.ddp.subscribe(this.jobConfig.queueName);
+    this.observer = this.ddp.observe(this.jobConfig.queueName);
     this.observer.added = (id) => {
-      logger.info('Added job:', id);
-      queue.trigger();
+      this.logger.info('Incoming job', id, ', triggering workers');
+      for (let worker of this.runningWorkers) {
+        worker.triggerQueues();
+      }
     }
     this.observer.changed = () => {}
   }
 
   startWorkers() {
     for (var workerClass of this.availableWorkers) {
-      var worker = new WalletWorker(this);
+      var worker = new workerClass(this);
       worker.start();
       this.runningWorkers.push(worker);
     }

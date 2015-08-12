@@ -11,6 +11,7 @@
   },
   "workers": {
     "wallet": {
+      "queueName": "jobQueue",
       "currencies": {
         "nkNov8f9xuYHCMjmQ": {
           "name": "Bitcoin",

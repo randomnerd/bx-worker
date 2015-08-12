@@ -7,7 +7,6 @@ winston.remove(winston.transports.Console);
 winston.add(winston.transports.Console, {'timestamp':true,'colorize':true});
 
 var meteorConfig = config.get('meteorConfig');
-var jobConfig    = config.get('jobConfig');
 
 var ddp = new DDP({
   host: meteorConfig.host,
