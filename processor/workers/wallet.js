@@ -6,9 +6,6 @@ export class WalletWorker extends BaseWorker {
     this.name = 'WalletWorker';
     this.clients = {};
     this.config = this.processor.config.get('workers.wallet');
-    this.queues = {};
-    this.jobMap = this.getJobMap();
-    this.jobTypes = Object.keys(this.jobMap);
   }
 
   startClient(id, config) {
@@ -26,25 +23,9 @@ export class WalletWorker extends BaseWorker {
     }
   }
 
-  startQueues() {
-    for (let type of this.jobTypes) {
-      let qname = this.config.queueName;
-      let params = { pollInterval: 1000000000 };
-      this.queues[type] = this.jc.processJobs(qname, type, params, this.jobMap[type].bind(this))
-    }
-  }
-
   start() {
-    this.logger.info('WalletWorker starting');
     this.startClients();
-    this.startQueues();
     super.start();
-  }
-
-  stop() {
-    this.logger.info('WalletWorker stopping');
-    this.stopQueues();
-    super.stop();
   }
 
   getJobMap() {
