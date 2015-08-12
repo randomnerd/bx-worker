@@ -38,12 +38,13 @@ export class WalletWorker extends BaseWorker {
     this.logger.info('WalletWorker starting');
     this.startClients();
     this.startQueues();
-    this.startObserver();
+    super.start();
   }
 
   stop() {
     this.logger.info('WalletWorker stopping');
     this.stopQueues();
+    super.stop();
   }
 
   getJobMap() {

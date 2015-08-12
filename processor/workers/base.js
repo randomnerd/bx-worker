@@ -9,11 +9,11 @@ export class BaseWorker {
   }
 
   start() {
-    throw 'Worker should implement start() method'
+    this.startObserver();
   }
 
   stop() {
-    throw 'Worker should implement stop() method'
+    this.stopObserver();
   }
 
   triggerQueues() {
@@ -36,5 +36,9 @@ export class BaseWorker {
       this.triggerQueues();
     }
     this.observer.changed = () => {}
+  }
+
+  stopObserver() {
+    this.observer.stop()
   }
 }
