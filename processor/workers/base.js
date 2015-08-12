@@ -16,16 +16,6 @@ export class BaseWorker {
     throw 'Worker should implement stop() method'
   }
 
-  registerJobTypes() {
-    for (let type of this.jobTypes) {
-      if (this.processor.jobTypeMap[type]) {
-        throw 'Job type ' + type + ' already registered to ' + this.processor.jobTypeMap[type].name;
-      }
-      this.processor.jobTypeMap[type] = this;
-    }
-    this.logger.info(this.name + ' registered for job types: ' + this.jobTypes.join(', '));
-  }
-
   triggerQueues() {
     for (let type of Object.keys(this.queues)) {
       this.queues[type].trigger();
@@ -36,5 +26,15 @@ export class BaseWorker {
     for (let type of Object.keys(this.queues)) {
       this.queues[type].shutdown();
     }
+  }
+
+  startObserver() {
+    this.ddp.subscribe(this.config.queueName);
+    this.observer = this.ddp.observe(this.config.queueName);
+    this.observer.added = (id) => {
+      this.logger.info(this.name, ': incoming job', id);
+      this.triggerQueues();
+    }
+    this.observer.changed = () => {}
   }
 }
