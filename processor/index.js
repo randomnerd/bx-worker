@@ -1,13 +1,16 @@
 import JobCollection from 'meteor-job'
 import {WalletWorker} from './workers/wallet'
+import mongoose from 'mongoose'
 
 export class Processor {
   constructor(ddp, config, logger) {
+    this.mongo     = mongoose;
     this.jc        = JobCollection;
     this.ddp       = ddp;
     this.config    = config;
     this.logger    = logger;
     this.jobConfig = config.get('jobConfig');
+    this.dbConfig  = config.get('mongoConfig');
     this.jc.setDDP(this.ddp);
 
     this.runningWorkers = [];
@@ -16,9 +19,15 @@ export class Processor {
     ]
   }
 
+  connectDb() {
+    let conf = this.dbConfig;
+    let url = `mongodb://${conf.host}:${conf.port}/${conf.dbName}`
+    this.mongo.connect(url);
+  }
+
   start() {
     this.logger.info('Starting job processing');
-
+    this.connectDb();
     this.startWorkers();
   }
 

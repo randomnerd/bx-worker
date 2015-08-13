@@ -2,6 +2,7 @@ export class BaseWorker {
   constructor(processor) {
     this.jc        = processor.jc;
     this.ddp       = processor.ddp;
+    this.mongo     = processor.mongo;
     this.logger    = processor.logger;
     this.queues    = {};
     this.processor = processor;
