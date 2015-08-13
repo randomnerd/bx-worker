@@ -5,6 +5,10 @@
     "user": "admin@example.com",
     "pass": "123qwe"
   },
+  "mongoConfig": {
+    "host": "localhost",
+    "port": "3001"
+  },
   "jobConfig": {
     "queueName": "jobQueue",
     "collectionName": "jobs"
