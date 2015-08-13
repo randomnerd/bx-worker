@@ -1,5 +1,5 @@
-var JobCollection = require('meteor-job');
-import {WalletWorker} from './workers/wallet';
+import JobCollection from 'meteor-job'
+import {WalletWorker} from './workers/wallet'
 
 export class Processor {
   constructor(ddp, config, logger) {

@@ -1,5 +1,5 @@
+import bitcoin from 'bitcoin'
 import {BaseWorker} from './base'
-var bitcoin = require('bitcoin');
 
 export class WalletWorker extends BaseWorker {
   init() {
