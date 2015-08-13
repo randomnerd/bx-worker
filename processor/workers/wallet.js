@@ -1,5 +1,6 @@
 import bitcoin from 'bitcoin'
 import {BaseWorker} from './base'
+import Random from 'meteor-random'
 
 export class WalletWorker extends BaseWorker {
   init() {
