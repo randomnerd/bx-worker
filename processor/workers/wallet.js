@@ -25,8 +25,19 @@ export class WalletWorker extends BaseWorker {
   }
 
   start() {
+    this.initModels();
     this.startClients();
     super.start();
+  }
+
+  initModels() {
+    this.Wallet = this.mongo.model('Wallet', {
+      _id: String,
+      currId: String,
+      userId: String,
+      address: String,
+      createdAt: Date
+    })
   }
 
   getJobMap() {
@@ -55,10 +66,29 @@ export class WalletWorker extends BaseWorker {
         job.fail('' + err)
       } else {
         this.logger.info('New address for user', userId, '/ currency', currId, '/', address);
-        // TODO: Save new address to database
-        job.done();
+
+        let wallet = this.saveWallet(userId, currId, address, (err) => {
+          if (err) {
+            job.fail('' + err)
+          } else {
+            this.logger.info('Address saved with id', wallet.id);
+            job.done()
+          }
+        });
       }
       callback()
     })
+  }
+
+  saveWallet(userId, currId, address, cb) {
+    let wallet = new this.Wallet({
+      _id: Random.id(),
+      currId: currId,
+      userId: userId,
+      address: address,
+      createdAt: new Date
+    });
+    wallet.save(cb.bind(this));
+    return wallet;
   }
 }
