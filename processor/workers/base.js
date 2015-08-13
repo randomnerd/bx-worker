@@ -6,7 +6,8 @@ export class BaseWorker {
     this.queues    = {};
     this.processor = processor;
 
-    if (this.afterCreate) this.afterCreate();
+    this.init();
+    this.config = this.processor.config.get('workers.' + this.configName);
   }
 
   start() {

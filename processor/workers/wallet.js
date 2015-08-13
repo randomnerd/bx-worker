@@ -2,10 +2,10 @@ import {BaseWorker} from './base'
 var bitcoin = require('bitcoin');
 
 export class WalletWorker extends BaseWorker {
-  afterCreate() {
+  init() {
     this.name = 'WalletWorker';
+    this.configName = 'wallet';
     this.clients = {};
-    this.config = this.processor.config.get('workers.wallet');
   }
 
   startClient(id, config) {
