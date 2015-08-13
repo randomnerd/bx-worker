@@ -30,7 +30,8 @@ export class WalletWorker extends BaseWorker {
 
   getJobMap() {
     return {
-      testjob: this.testjob
+      testjob: this.testjob,
+      newAddress: this.newAddress
     }
   }
 
@@ -38,5 +39,25 @@ export class WalletWorker extends BaseWorker {
     this.logger.info('testjob running');
     job.done();
     callback();
+  }
+
+  newAddress(job, callback) {
+    let {userId, currId} = job.data;
+    let client = this.clients[currId];
+    if (!client) {
+      // TODO: check user & currency at database
+      job.fail("No client configured for currency " + currId);
+      return callback();
+    }
+    client.getNewAddress((err, address) => {
+      if (err) {
+        job.fail('' + err)
+      } else {
+        this.logger.info('New address for user', userId, '/ currency', currId, '/', address);
+        // TODO: Save new address to database
+        job.done();
+      }
+      callback()
+    })
   }
 }
