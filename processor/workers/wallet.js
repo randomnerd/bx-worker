@@ -30,6 +30,11 @@ export class WalletWorker extends BaseWorker {
     super.start();
   }
 
+  stop() {
+    this.dropModels();
+    super.stop();
+  }
+
   initModels() {
     this.Wallet = this.mongo.model('Wallet', {
       _id: String,
@@ -38,6 +43,10 @@ export class WalletWorker extends BaseWorker {
       address: String,
       createdAt: Date
     })
+  }
+
+  dropModels() {
+    delete this.mongo.connection.models.Wallet;
   }
 
   getJobMap() {

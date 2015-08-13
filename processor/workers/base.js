@@ -41,7 +41,7 @@ export class BaseWorker {
 
   stopQueues() {
     for (let type of Object.keys(this.queues)) {
-      this.queues[type].shutdown();
+      this.queues[type].shutdown({quiet: true});
     }
   }
 

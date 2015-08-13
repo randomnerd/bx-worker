@@ -28,7 +28,7 @@ var proc = new Processor(ddp, config, winston);
 
 ddp.connect(function (err, wasReconnect) {
   if (err) { winston.error('DDP connection error:', err); return }
-  winston.info('DDP Connected');
+  wasReconnect ? winston.info('DDP Reconnected') : winston.info('DDP Connected');
 
   DDPlogin(ddp, ddpAuth, function (err, token) {
     if (err) { winston.error('DDP Auth error:', err); throw err; }
@@ -36,4 +36,11 @@ ddp.connect(function (err, wasReconnect) {
 
     proc.start();
   });
+});
+
+ddp.on('socket-close', (code, message) => {
+  if (proc.isRunning) {
+    winston.error('DDP Socket closed, stopping workers...');
+    proc.stop();
+  }
 });

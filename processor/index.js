@@ -11,6 +11,7 @@ export class Processor {
     this.logger    = logger;
     this.jobConfig = config.get('jobConfig');
     this.dbConfig  = config.get('mongoConfig');
+    this.isRunning = false;
     this.jc.setDDP(this.ddp);
 
     this.runningWorkers = [];
@@ -19,16 +20,30 @@ export class Processor {
     ]
   }
 
-  connectDb() {
+  connectDb(cb) {
+    this.logger.info('Connecting mongo...');
     let conf = this.dbConfig;
     let url = `mongodb://${conf.host}:${conf.port}/${conf.dbName}`
-    this.mongo.connect(url);
+    this.mongo.connect(url, () => {
+      this.logger.info('Connected mongo');
+      if (typeof cb === 'function') cb()
+    });
+  }
+
+  disconnectDb(cb) {
+    this.logger.info('Disconnecting mongo...');
+    this.mongo.disconnect(() => {
+      this.logger.info('Disconnected mongo');
+      if (typeof cb === 'function') cb()
+    });
   }
 
   start() {
     this.logger.info('Starting job processing');
-    this.connectDb();
-    this.startWorkers();
+    this.connectDb(() => {
+      this.startWorkers();
+      this.isRunning = true;
+    })
   }
 
   startWorkers() {
@@ -40,9 +55,11 @@ export class Processor {
   }
 
   stop() {
-    this.observer.stop();
     for (var worker of this.runningWorkers) {
       worker.stop()
     }
+    this.disconnectDb(() => {
+      this.isRunning = false;
+    });
   }
 }
