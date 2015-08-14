@@ -1,7 +1,9 @@
-var DDP = require('ddp');
-var DDPlogin = require('ddp-login');
-var config = require('config');
-var winston = require('winston');
+import DDP from 'ddp'
+import DDPlogin from 'ddp-login'
+import config from 'config'
+import winston from 'winston'
+import {Processor} from './processor'
+
 winston.cli();
 winston.remove(winston.transports.Console);
 winston.add(winston.transports.Console, {'timestamp':true,'colorize':true});
@@ -23,7 +25,6 @@ var ddpAuth = {
   pass:    meteorConfig.pass
 };
 
-import {Processor} from './processor'
 var proc = new Processor(ddp, config, winston);
 
 ddp.connect(function (err, wasReconnect) {
