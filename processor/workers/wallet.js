@@ -138,9 +138,13 @@ export class WalletWorker extends BaseWorker {
     }
 
     this.logger.info('Processing deposits for', curr.name);
-    this._processDeposits(job.data.currId);
-    job.done();
-    callback();
+    try {
+      this._processDeposits(job.data.currId);
+      job.done();
+    } catch (e) {
+      this.logger.error('Processing job', job, 'failed:', e.toString());
+      job.fail(e.toString());
+    } finally { callback(); }
   }
 
   _processDeposits(id, skip = 0, batch = 50) {
