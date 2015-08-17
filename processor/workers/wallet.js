@@ -2,6 +2,7 @@ import bitcoin from 'bitcoin'
 import {BaseWorker} from './base'
 import Random from 'meteor-random'
 import Big from 'big.js'
+import _ from 'underscore'
 
 export class WalletWorker extends BaseWorker {
   init() {
@@ -103,7 +104,7 @@ export class WalletWorker extends BaseWorker {
       } else {
         this.logger.info('New address for user', userId, '/ currency', currId, '/', address);
 
-        let wallet = this.saveWallet(userId, currId, address, (err) => {
+        let wallet = this._saveWallet(userId, currId, address, (err) => {
           if (err) {
             job.fail(err.toString())
           } else {
@@ -116,7 +117,7 @@ export class WalletWorker extends BaseWorker {
     })
   }
 
-  saveWallet(userId, currId, address, cb) {
+  _saveWallet(userId, currId, address, cb) {
     let wallet = new this.Wallet({
       _id: Random.id(),
       currId: currId,
@@ -149,30 +150,36 @@ export class WalletWorker extends BaseWorker {
       if (err) throw 'Error listing transactions: ' + err;
       if (!result.transactions || result.transactions.length === 0) return;
 
-      for (let tx of result.transactions) {
-        if (tx.category !== 'receive') continue;
+      let txids = _.pluck(result.transactions, 'txid');
 
+      this.Transaction.find({txid: {$in: txids}}, (err, txs) => {
         // stop processing if transaction has been processed already
         // this usually means all transactions after this one have
         // been processed too
         // TODO: this needs to be tested against various conditions
         //       where this assumption could happen to be false
-        try {
-          this._processDepositTx(client, tx);
-        } catch (e) {
-          if (e === 'breakloop') return;
-        }
-      }
+        let foundIds = _.pluck(txs, 'txid');
+        let txsToProcess = _.reject(result.transactions, (tx) => {
+          _.contains(foundIds, tx.txid)
+        });
 
-      if (result.transactions.length < batch) return;
-      this._processDeposits(id, skip + batch, batch);
+        for (let tx of txsToProcess) {
+          if (tx.category !== 'receive') continue;
+          this._processDepositTx(client, tx);
+        }
+
+        // if array size is less than batch then we are either
+        // at the end of the list or some of those TXs have been
+        // processed already, both situations should terminate the loop
+        if (txsToProcess.length < batch) return;
+        // otherwise we're continuing the recursion
+        this._processDeposits(id, skip + batch, batch);
+      });
+
     })
   }
 
   _processDepositTx(client, tx) {
-    this.Transaction.findOne({txid: tx.txid}, (err, tx) => {
-      if (tx) throw 'breakloop'
-    });
     client.getTransaction(tx.txid, (err, result) => {
       let found = 0;
       for (let rawtx of result.details) {
