@@ -40,16 +40,46 @@ export class WalletWorker extends BaseWorker {
 
   initModels() {
     this.Wallet = this.mongo.model('Wallet', {
-      _id: String,
-      currId: String,
+      _id:        String,
+      currId:     String,
+      userId:     String,
+      address:    String,
+      createdAt:  Date
+    });
+    this.Balance = this.mongo.model('Balance', {
+      _id:    String,
       userId: String,
-      address: String,
-      createdAt: Date
-    })
+      currId: String,
+      amount: Number,
+      held:   Number
+    });
+    this.Currency = this.mongo.model('Currency', {
+      _id:        String,
+      published:  Boolean,
+      shortName:  String,
+      name:       String,
+      status:     String
+    });
+    this.Transaction = this.mongo.model('Transaction', {
+      _id:           String,
+      userId:        String,
+      currId:        String,
+      walletId:      String,
+      address:       String,
+      txid:          String,
+      category:      String,
+      confirmations: String,
+      amount:        Number,
+      createdAt:     Date,
+      updatedAt:     Date
+    });
   }
 
   dropModels() {
     delete this.mongo.connection.models.Wallet;
+    delete this.mongo.connection.models.Balance;
+    delete this.mongo.connection.models.Currency;
+    delete this.mongo.connection.models.Transaction;
   }
 
   getJobMap() {
@@ -100,7 +130,8 @@ export class WalletWorker extends BaseWorker {
 
   processDeposits(job, callback) {
     let curr = this.config.currencies[job.data.currId];
-    if (!curr) {
+    let client = this.clients[job.data.currId];
+    if (!curr || !client) {
       job.fail('Currency not configured');
       return callback();
     }
@@ -117,16 +148,31 @@ export class WalletWorker extends BaseWorker {
     client.listTransactions(null, batch, skip, (err, result) => {
       if (err) throw 'Error listing transactions: ' + err;
       if (!result.transactions || result.transactions.length === 0) return;
+
       for (let tx of result.transactions) {
         if (tx.category !== 'receive') continue;
-        this._processDepositTx(client, tx);
+
+        // stop processing if transaction has been processed already
+        // this usually means all transactions after this one have
+        // been processed too
+        // TODO: this needs to be tested against various conditions
+        //       where this assumption could happen to be false
+        try {
+          this._processDepositTx(client, tx);
+        } catch (e) {
+          if (e === 'breakloop') return;
+        }
       }
+
       if (result.transactions.length < batch) return;
       this._processDeposits(id, skip + batch, batch);
     })
   }
 
   _processDepositTx(client, tx) {
+    this.Transaction.findOne({txid: tx.txid}, (err, tx) => {
+      if (tx) throw 'breakloop'
+    });
     client.getTransaction(tx.txid, (err, result) => {
       let found = 0;
       for (let rawtx of result.details) {
