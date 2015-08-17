@@ -205,6 +205,25 @@ export class WalletWorker extends BaseWorker {
 
   _saveDeposit(tx, rawtx, wallet) {
     // save deposit
+    // rawtx is the source of truth for tx amount and destination address
+    // tx is the source of truth for other tx details
+
+    let newTx = new this.Transaction({
+      _id: Random.id(),
+      userId: wallet.userId,
+      currId: wallet.currId,
+      walletId: wallet._id,
+      txid: tx.txid,
+      category: rawtx.category,
+      confirmations: tx.confirmations,
+      amount: rawtx.amount,
+      createdAt: new Date,
+      updatedAt: null
+    });
+    newTx.save((err) => {
+      if (err) throw err;
+    });
+  }
   }
 
 }
