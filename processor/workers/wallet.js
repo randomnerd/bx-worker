@@ -16,6 +16,7 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[id] = new bitcoin.Client(config.rpc);
     client.currId = id;
     client.currName = config.name;
+    client.confReq = config.confReq;
     client.getBalance((err, balance) => {
       this.logger.info(config.name, 'balance:', balance)
     })
@@ -70,7 +71,7 @@ export class WalletWorker extends BaseWorker {
       address:         String,
       txid:            String,
       category:        String,
-      confirmations:   String,
+      confirmations:   Number,
       amount:          Number,
       createdAt:       Date,
       updatedAt:       Date
@@ -135,6 +136,54 @@ export class WalletWorker extends BaseWorker {
     });
     wallet.save(cb.bind(this));
     return wallet;
+  }
+
+  updateDepositConfirmations(job, callback) {
+    let curr = this.config.currencies[job.data.currId];
+    let client = this.clients[job.data.currId];
+    if (!curr || !client) {
+      job.fail('Currency not configured');
+      return callback();
+    }
+
+    this.logger.info('Updating deposit confirmations for', curr.name);
+    try {
+      this._updateDepositConfirmations(job.data.currId);
+      job.done();
+    } catch (e) {
+      this.logger.error('Processing job', job, 'failed:', e.toString());
+      job.fail(e.toString());
+    } finally { callback(); }
+  }
+
+  _updateDepositConfirmations(currId) {
+    let client = this.clients[currId];
+    this.Transaction.find({
+      currId: currId,
+      confirmations: { $lt: client.confReq },
+      balanceChangeId: null
+    }, (err, txs) => {
+      for (let tx of txs) {
+        this._updateTxConf(tx);
+      }
+    });
+  }
+
+  _updateTxConf(tx) {
+    let client = this.clients[tx.currId];
+    client.getTransaction(tx.txid, (err, txdata) => {
+      return if txdata.confirmations === tx.confirmations;
+
+      tx.confirmations = txdata.confirmations;
+      tx.updatedAt = new Date;
+      tx.save();
+
+      if (tx.confirmations >= client.confReq) this._matureDeposit(tx);
+    });
+  }
+
+  _matureDeposit(tx) {
+    // update user balance, send notification
   }
 
   processDeposits(job, callback) {

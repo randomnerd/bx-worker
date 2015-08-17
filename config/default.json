@@ -20,6 +20,7 @@
       "currencies": {
         "nkNov8f9xuYHCMjmQ": {
           "name": "Bitcoin",
+          "confReq": 3,
           "rpc": {
             "host": "rpc.blockchain.info",
             "port": 443,
