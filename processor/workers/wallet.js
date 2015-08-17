@@ -54,16 +54,9 @@ export class WalletWorker extends BaseWorker {
 
   getJobMap() {
     return {
-      testjob: this.testjob,
       newAddress: this.newAddress,
       processDeposits: this.processDeposits
     }
-  }
-
-  testjob(job, callback) {
-    this.logger.info('testjob running');
-    job.done();
-    callback();
   }
 
   newAddress(job, callback) {
@@ -76,13 +69,13 @@ export class WalletWorker extends BaseWorker {
     }
     client.getNewAddress((err, address) => {
       if (err) {
-        job.fail('' + err)
+        job.fail(err.toString())
       } else {
         this.logger.info('New address for user', userId, '/ currency', currId, '/', address);
 
         let wallet = this.saveWallet(userId, currId, address, (err) => {
           if (err) {
-            job.fail('' + err)
+            job.fail(err.toString())
           } else {
             this.logger.info('Address saved with id', wallet.id);
             job.done()
