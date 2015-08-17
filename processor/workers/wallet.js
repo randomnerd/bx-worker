@@ -62,17 +62,25 @@ export class WalletWorker extends BaseWorker {
       status:     String
     });
     this.Transaction = this.mongo.model('Transaction', {
-      _id:           String,
-      userId:        String,
-      currId:        String,
-      walletId:      String,
-      address:       String,
-      txid:          String,
-      category:      String,
-      confirmations: String,
-      amount:        Number,
-      createdAt:     Date,
-      updatedAt:     Date
+      _id:             String,
+      userId:          String,
+      currId:          String,
+      walletId:        String,
+      balanceChangeId: String,
+      address:         String,
+      txid:            String,
+      category:        String,
+      confirmations:   String,
+      amount:          Number,
+      createdAt:       Date,
+      updatedAt:       Date
+    });
+    this.Notification = this.mongo.model('Notification', {
+      _id: String,
+      userId: String,
+      title: String,
+      message: String,
+      type: String
     });
   }
 
@@ -217,7 +225,9 @@ export class WalletWorker extends BaseWorker {
       userId: wallet.userId,
       currId: wallet.currId,
       walletId: wallet._id,
+      balanceChangeId: null,
       txid: tx.txid,
+      address: rawtx.address,
       category: rawtx.category,
       confirmations: tx.confirmations,
       amount: rawtx.amount,
@@ -226,8 +236,30 @@ export class WalletWorker extends BaseWorker {
     });
     newTx.save((err) => {
       if (err) throw err;
+      this._notifyNewTx(newTx);
     });
   }
+
+  _notifyUser(userId, title, message, type) {
+    let notification = new this.Notification({
+      _id: Random.id(),
+      userId: userId,
+      title: title,
+      message: message,
+      type: type
+    });
+    notification.save();
+  }
+
+  _notifyNewTx(tx) {
+    this.Currency.findOne({_id: tx.currId}, (err, curr) => {
+      this._notifyUser(
+        tx.userId,
+        `Incoming: ${tx.amount} ${curr.shortName}`
+        `${tx.amount} ${curr.shortName} received at ${tx.address}`,
+        'newTransaction'
+      );
+    })
   }
 
 }
