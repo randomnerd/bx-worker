@@ -3,6 +3,7 @@ export class BaseWorker {
     this.jc        = processor.jc;
     this.ddp       = processor.ddp;
     this.mongo     = processor.mongo;
+    this.models    = processor.models;
     this.logger    = processor.logger;
     this.queues    = {};
     this.processor = processor;

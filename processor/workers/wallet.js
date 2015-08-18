@@ -30,66 +30,8 @@ export class WalletWorker extends BaseWorker {
   }
 
   start() {
-    this.initModels();
     this.startClients();
     super.start();
-  }
-
-  stop() {
-    this.dropModels();
-    super.stop();
-  }
-
-  initModels() {
-    this.Wallet = this.mongo.model('Wallet', {
-      _id:        String,
-      currId:     String,
-      userId:     String,
-      address:    String,
-      createdAt:  Date
-    });
-    this.Balance = this.mongo.model('Balance', {
-      _id:    String,
-      userId: String,
-      currId: String,
-      amount: Number,
-      held:   Number
-    });
-    this.Currency = this.mongo.model('Currency', {
-      _id:        String,
-      published:  Boolean,
-      shortName:  String,
-      name:       String,
-      status:     String
-    });
-    this.Transaction = this.mongo.model('Transaction', {
-      _id:             String,
-      userId:          String,
-      currId:          String,
-      walletId:        String,
-      balanceChangeId: String,
-      address:         String,
-      txid:            String,
-      category:        String,
-      confirmations:   Number,
-      amount:          Number,
-      createdAt:       Date,
-      updatedAt:       Date
-    });
-    this.Notification = this.mongo.model('Notification', {
-      _id: String,
-      userId: String,
-      title: String,
-      message: String,
-      type: String
-    });
-  }
-
-  dropModels() {
-    delete this.mongo.connection.models.Wallet;
-    delete this.mongo.connection.models.Balance;
-    delete this.mongo.connection.models.Currency;
-    delete this.mongo.connection.models.Transaction;
   }
 
   getJobMap() {
@@ -127,7 +69,7 @@ export class WalletWorker extends BaseWorker {
   }
 
   _saveWallet(userId, currId, address, cb) {
-    let wallet = new this.Wallet({
+    let wallet = new this.models.Wallet({
       _id: Random.id(),
       currId: currId,
       userId: userId,
@@ -158,7 +100,7 @@ export class WalletWorker extends BaseWorker {
 
   _updateDepositConfirmations(currId) {
     let client = this.clients[currId];
-    this.Transaction.find({
+    this.models.Transaction.find({
       currId: currId,
       confirmations: { $lt: client.confReq },
       balanceChangeId: null
@@ -213,7 +155,7 @@ export class WalletWorker extends BaseWorker {
 
       let txids = _.pluck(result.transactions, 'txid');
 
-      this.Transaction.find({txid: {$in: txids}}, (err, txs) => {
+      this.models.Transaction.find({txid: {$in: txids}}, (err, txs) => {
         // stop processing if transaction has been processed already
         // this usually means all transactions after this one have
         // been processed too
@@ -246,7 +188,7 @@ export class WalletWorker extends BaseWorker {
       for (let rawtx of result.details) {
         if (rawtx.category !== 'receive') continue;
 
-        this.Wallet.findOne({address: rawtx.address}, (err, wallet) => {
+        this.models.Wallet.findOne({address: rawtx.address}, (err, wallet) => {
           if (!wallet) return;
           found += 1;
 
@@ -269,7 +211,7 @@ export class WalletWorker extends BaseWorker {
     // rawtx is the source of truth for tx amount and destination address
     // tx is the source of truth for other tx details
 
-    let newTx = new this.Transaction({
+    let newTx = new this.models.Transaction({
       _id: Random.id(),
       userId: wallet.userId,
       currId: wallet.currId,
@@ -290,7 +232,7 @@ export class WalletWorker extends BaseWorker {
   }
 
   _notifyUser(userId, title, message, type) {
-    let notification = new this.Notification({
+    let notification = new this.models.Notification({
       _id: Random.id(),
       userId: userId,
       title: title,
@@ -301,7 +243,7 @@ export class WalletWorker extends BaseWorker {
   }
 
   _notifyNewTx(tx) {
-    this.Currency.findOne({_id: tx.currId}, (err, curr) => {
+    this.models.Currency.findOne({_id: tx.currId}, (err, curr) => {
       this._notifyUser(
         tx.userId,
         `Incoming: ${tx.amount} ${curr.shortName}`

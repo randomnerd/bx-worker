@@ -1,12 +1,14 @@
 import JobCollection from 'meteor-job'
 import {WalletWorker} from './workers/wallet'
 import mongoose from 'mongoose'
+import {ModelsCollection} from './models'
 
 export class Processor {
   constructor(ddp, config, logger) {
     this.mongo     = mongoose;
     this.jc        = JobCollection;
     this.ddp       = ddp;
+    this.models    = new ModelsCollection(mongoose);
     this.config    = config;
     this.logger    = logger;
     this.jobConfig = config.get('jobConfig');
