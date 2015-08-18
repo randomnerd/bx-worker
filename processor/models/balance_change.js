@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-let Schema = mongoose.schema;
+let Schema = mongoose.Schema;
 
 export var Transaction = new Schema({
   _id:       String,

@@ -1,7 +1,5 @@
 import mongoose from 'mongoose'
-let Schema = mongoose.schema;
-
-export var Transaction = new Schema({
+export var TransactionSchema = new mongoose.Schema({
   _id:             String,
   userId:          String,
   currId:          String,
@@ -14,4 +12,5 @@ export var Transaction = new Schema({
   amount:          Number,
   createdAt:       Date,
   updatedAt:       Date
-})
+});
+export var Transaction = mongoose.model('Transaction', TransactionSchema);

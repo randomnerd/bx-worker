@@ -3,6 +3,9 @@ import {BaseWorker} from './base'
 import Random from 'meteor-random'
 import Big from 'big.js'
 import _ from 'underscore'
+import {Wallet} from '../models/wallet'
+import {Transaction} from '../models/transaction'
+import {Notification} from '../models/notification'
 
 export class WalletWorker extends BaseWorker {
   init() {
@@ -69,7 +72,7 @@ export class WalletWorker extends BaseWorker {
   }
 
   _saveWallet(userId, currId, address, cb) {
-    let wallet = new this.models.Wallet({
+    let wallet = new Wallet({
       _id: Random.id(),
       currId: currId,
       userId: userId,
@@ -100,7 +103,7 @@ export class WalletWorker extends BaseWorker {
 
   _updateDepositConfirmations(currId) {
     let client = this.clients[currId];
-    this.models.Transaction.find({
+    Transaction.find({
       currId: currId,
       confirmations: { $lt: client.confReq },
       balanceChangeId: null
@@ -114,7 +117,7 @@ export class WalletWorker extends BaseWorker {
   _updateTxConf(tx) {
     let client = this.clients[tx.currId];
     client.getTransaction(tx.txid, (err, txdata) => {
-      return if txdata.confirmations === tx.confirmations;
+      if (txdata.confirmations === tx.confirmations) return;
 
       tx.confirmations = txdata.confirmations;
       tx.updatedAt = new Date;
@@ -155,7 +158,7 @@ export class WalletWorker extends BaseWorker {
 
       let txids = _.pluck(result.transactions, 'txid');
 
-      this.models.Transaction.find({txid: {$in: txids}}, (err, txs) => {
+      Transaction.find({txid: {$in: txids}}, (err, txs) => {
         // stop processing if transaction has been processed already
         // this usually means all transactions after this one have
         // been processed too
@@ -188,7 +191,7 @@ export class WalletWorker extends BaseWorker {
       for (let rawtx of result.details) {
         if (rawtx.category !== 'receive') continue;
 
-        this.models.Wallet.findOne({address: rawtx.address}, (err, wallet) => {
+        Wallet.findOne({address: rawtx.address}, (err, wallet) => {
           if (!wallet) return;
           found += 1;
 
@@ -211,7 +214,7 @@ export class WalletWorker extends BaseWorker {
     // rawtx is the source of truth for tx amount and destination address
     // tx is the source of truth for other tx details
 
-    let newTx = new this.models.Transaction({
+    let newTx = new Transaction({
       _id: Random.id(),
       userId: wallet.userId,
       currId: wallet.currId,
@@ -231,20 +234,9 @@ export class WalletWorker extends BaseWorker {
     });
   }
 
-  _notifyUser(userId, title, message, type) {
-    let notification = new this.models.Notification({
-      _id: Random.id(),
-      userId: userId,
-      title: title,
-      message: message,
-      type: type
-    });
-    notification.save();
-  }
-
   _notifyNewTx(tx) {
-    this.models.Currency.findOne({_id: tx.currId}, (err, curr) => {
-      this._notifyUser(
+    Currency.findOne({_id: tx.currId}, (err, curr) => {
+      Notification.notify(
         tx.userId,
         `Incoming: ${tx.amount} ${curr.shortName}`
         `${tx.amount} ${curr.shortName} received at ${tx.address}`,
