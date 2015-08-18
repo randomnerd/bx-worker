@@ -1,5 +1,7 @@
+import Random from 'meteor-random'
 import mongoose from 'mongoose'
 import {Currency} from './currency'
+import {Balance} from './balance'
 export var TransactionSchema = new mongoose.Schema({
   _id:             String,
   userId:          String,
@@ -68,6 +70,9 @@ TransactionSchema.methods = {
 
   matureDeposit: () => {
     // update user balance, send notification
+    Currency.balanceFor(this.currId, this.userId, (err, balance) => {
+      balance.change(this)
+    })
   }
 
 }
