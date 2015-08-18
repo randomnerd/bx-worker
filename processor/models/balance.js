@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import findOrCreate from 'mongoose-findorcreate'
 export var BalanceSchema = new mongoose.Schema({
   _id:    String,
   userId: String,
