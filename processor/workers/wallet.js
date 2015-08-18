@@ -58,7 +58,7 @@ export class WalletWorker extends BaseWorker {
       } else {
         this.logger.info('New address for user', userId, '/ currency', currId, '/', address);
 
-        let wallet = this._saveWallet(userId, currId, address, (err) => {
+        let wallet = Wallet.newUserAddress(userId, currId, address, (err) => {
           if (err) {
             job.fail(err.toString())
           } else {
@@ -69,18 +69,6 @@ export class WalletWorker extends BaseWorker {
       }
       callback()
     })
-  }
-
-  _saveWallet(userId, currId, address, cb) {
-    let wallet = new Wallet({
-      _id: Random.id(),
-      currId: currId,
-      userId: userId,
-      address: address,
-      createdAt: new Date
-    });
-    wallet.save(cb.bind(this));
-    return wallet;
   }
 
   updateDepositConfirmations(job, callback) {
@@ -109,26 +97,9 @@ export class WalletWorker extends BaseWorker {
       balanceChangeId: null
     }, (err, txs) => {
       for (let tx of txs) {
-        this._updateTxConf(tx);
+        tx.updateConfirmations(client);
       }
     });
-  }
-
-  _updateTxConf(tx) {
-    let client = this.clients[tx.currId];
-    client.getTransaction(tx.txid, (err, txdata) => {
-      if (txdata.confirmations === tx.confirmations) return;
-
-      tx.confirmations = txdata.confirmations;
-      tx.updatedAt = new Date;
-      tx.save();
-
-      if (tx.confirmations >= client.confReq) this._matureDeposit(tx);
-    });
-  }
-
-  _matureDeposit(tx) {
-    // update user balance, send notification
   }
 
   processDeposits(job, callback) {
@@ -195,7 +166,7 @@ export class WalletWorker extends BaseWorker {
           if (!wallet) return;
           found += 1;
 
-          this._saveDeposit(tx, rawtx, wallet)
+          Transaction.newDeposit(tx, rawtx, wallet)
         })
       }
       if (found === 0) {
@@ -206,42 +177,6 @@ export class WalletWorker extends BaseWorker {
           '| transaction did not land into user wallet'
         )
       }
-    })
-  }
-
-  _saveDeposit(tx, rawtx, wallet) {
-    // save deposit
-    // rawtx is the source of truth for tx amount and destination address
-    // tx is the source of truth for other tx details
-
-    let newTx = new Transaction({
-      _id: Random.id(),
-      userId: wallet.userId,
-      currId: wallet.currId,
-      walletId: wallet._id,
-      balanceChangeId: null,
-      txid: tx.txid,
-      address: rawtx.address,
-      category: rawtx.category,
-      confirmations: tx.confirmations,
-      amount: rawtx.amount,
-      createdAt: new Date,
-      updatedAt: null
-    });
-    newTx.save((err) => {
-      if (err) throw err;
-      this._notifyNewTx(newTx);
-    });
-  }
-
-  _notifyNewTx(tx) {
-    Currency.findOne({_id: tx.currId}, (err, curr) => {
-      Notification.notify(
-        tx.userId,
-        `Incoming: ${tx.amount} ${curr.shortName}`
-        `${tx.amount} ${curr.shortName} received at ${tx.address}`,
-        'newTransaction'
-      );
     })
   }
 

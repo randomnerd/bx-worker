@@ -6,14 +6,18 @@ export var NotificationSchema = new mongoose.Schema({
   message: String,
   type:    String
 });
-NotificationSchema.statics.notify = (userId, title, message, type) => {
-  let notification = new Notification({
-    _id: Random.id(),
-    userId: userId,
-    title: title,
-    message: message,
-    type: type
-  });
-  notification.save();
+
+NotificationSchema.statics = {
+  notify: (userId, title, message, type) => {
+    let notification = new Notification({
+      _id: Random.id(),
+      userId: userId,
+      title: title,
+      message: message,
+      type: type
+    });
+    notification.save();
+  }
 }
+
 export var Notification = mongoose.model('Notification', NotificationSchema);
