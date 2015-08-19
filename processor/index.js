@@ -1,5 +1,6 @@
 import JobCollection from 'meteor-job'
 import {WalletWorker} from './workers/wallet'
+import {BalanceWorker} from './workers/balance'
 import mongoose from 'mongoose'
 
 export class Processor {
@@ -16,7 +17,8 @@ export class Processor {
 
     this.runningWorkers = [];
     this.availableWorkers = [
-      WalletWorker
+      WalletWorker,
+      BalanceWorker
     ]
   }
 

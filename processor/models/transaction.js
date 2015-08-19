@@ -2,6 +2,7 @@ import Random from 'meteor-random'
 import mongoose from 'mongoose'
 import {Currency} from './currency'
 import {Balance} from './balance'
+import {Notification} from './notification'
 export var TransactionSchema = new mongoose.Schema({
   _id:             String,
   userId:          String,
@@ -18,7 +19,7 @@ export var TransactionSchema = new mongoose.Schema({
 });
 
 TransactionSchema.statics = {
-  newDeposit: (tx, rawtx, wallet) => {
+  newDeposit: function(tx, wallet) {
     // save deposit
     // rawtx is the source of truth for tx amount and destination address
     // tx is the source of truth for other tx details
@@ -30,10 +31,10 @@ TransactionSchema.statics = {
       walletId: wallet._id,
       balanceChangeId: null,
       txid: tx.txid,
-      address: rawtx.address,
-      category: rawtx.category,
-      confirmations: tx.confirmations,
-      amount: rawtx.amount,
+      address: tx.address,
+      category: tx.category,
+      confirmations: Math.abs(tx.confirmations),
+      amount: tx.amount,
       createdAt: new Date,
       updatedAt: null
     });
@@ -45,18 +46,19 @@ TransactionSchema.statics = {
 }
 
 TransactionSchema.methods = {
-  notifyUser: () => {
+  notifyUser: function() {
     Currency.findOne({_id: this.currId}, (err, curr) => {
+      if (err) throw err;
       Notification.notify(
         this.userId,
-        `Incoming: ${this.amount} ${curr.shortName}`
+        `Incoming: ${this.amount} ${curr.shortName}`,
         `${this.amount} ${curr.shortName} received at ${this.address}`,
         'newTransaction'
       );
     })
   },
 
-  updateConfirmations: (client) => {
+  updateConfirmations: function(client) {
     client.getTransaction(this.txid, (err, txdata) => {
       if (txdata.confirmations === this.confirmations) return;
 
@@ -68,7 +70,7 @@ TransactionSchema.methods = {
     });
   },
 
-  matureDeposit: () => {
+  matureDeposit: function() {
     // update user balance, send notification
     Currency.balanceFor(this.currId, this.userId, (err, balance) => {
       balance.change(this)

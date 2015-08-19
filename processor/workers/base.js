@@ -9,7 +9,12 @@ export class BaseWorker {
     this.processor = processor;
 
     this.init();
-    this.config = this.processor.config.get('workers.' + this.configName);
+    try {
+      this.config = this.processor.config.get('workers.' + this.configName);
+    } catch (e) {
+      this.logger.error('No config found for', this.name);
+      this.config = {};
+    }
   }
 
   start() {

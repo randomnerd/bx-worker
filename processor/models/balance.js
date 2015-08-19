@@ -36,7 +36,11 @@ BalanceSchema.methods = {
     change.save((err) => {
       if (err) throw err;
       this.pendingChanges.push(change._id);
-      this.save((err) => { if (err) throw err });
+      this.save((err) => {
+        if (err) throw err
+
+        // trigger balance worker here to catch the change
+      });
     });
   },
 

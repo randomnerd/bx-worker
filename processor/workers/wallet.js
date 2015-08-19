@@ -1,11 +1,8 @@
 import bitcoin from 'bitcoin'
 import {BaseWorker} from './base'
-import Random from 'meteor-random'
-import Big from 'big.js'
 import _ from 'underscore'
 import {Wallet} from '../models/wallet'
 import {Transaction} from '../models/transaction'
-import {Notification} from '../models/notification'
 
 export class WalletWorker extends BaseWorker {
   init() {
@@ -127,29 +124,40 @@ export class WalletWorker extends BaseWorker {
       if (err) throw 'Error listing transactions: ' + err;
       if (!result.transactions || result.transactions.length === 0) return;
 
-      let txids = _.pluck(result.transactions, 'txid');
-
-      Transaction.find({txid: {$in: txids}}, (err, txs) => {
+      let txids = _.uniq(_.pluck(result.transactions, 'txid'));
+      // check if those ids are already in database
+      Transaction.find({txid: {$in: txids}}, (err, foundTxs) => {
         // stop processing if transaction has been processed already
         // this usually means all transactions after this one have
         // been processed too
         // TODO: this needs to be tested against various conditions
         //       where this assumption could happen to be false
-        let foundIds = _.pluck(txs, 'txid');
-        let txsToProcess = _.reject(result.transactions, (tx) => {
-          _.contains(foundIds, tx.txid)
-        });
 
-        for (let tx of txsToProcess) {
-          if (tx.category !== 'receive') continue;
+        // filter transactions:
+        // - only process when category is receive
+        // - skip if alreary in DB
+        // - select distinct on txid
+        let foundIds = _.pluck(foundTxs, 'txid');
+        let newTxids = [];
+        let txs = _.reduce(result.transactions, (memo, tx) => {
+          if (tx.category !== 'receive') return memo;
+          if (_.contains(foundIds, tx.txid)) return memo;
+          if (_.contains(newTxids, tx.txid)) return memo;
+
+          newTxids.push(tx.txid);
+          memo.push(tx);
+          return memo;
+        }, []);
+
+        for (let tx of txs) {
           this._processDepositTx(client, tx);
         }
 
         // if array size is less than batch then we are either
         // at the end of the list or some of those TXs have been
         // processed already, both situations should terminate the loop
-        if (txsToProcess.length < batch) return;
-        // otherwise we're continuing the recursion
+        if (txs.length < batch) return;
+        // otherwise go to the next batch
         this._processDeposits(id, skip + batch, batch);
       });
 
@@ -158,24 +166,15 @@ export class WalletWorker extends BaseWorker {
 
   _processDepositTx(client, tx) {
     client.getTransaction(tx.txid, (err, result) => {
-      let found = 0;
       for (let rawtx of result.details) {
         if (rawtx.category !== 'receive') continue;
 
         Wallet.findOne({address: rawtx.address}, (err, wallet) => {
-          if (!wallet) return;
-          found += 1;
+          // TODO: better handling of this situation
+          if (!wallet) { return this.logger.error('Wallet not found'); }
 
-          Transaction.newDeposit(tx, rawtx, wallet)
+          Transaction.newDeposit(tx, wallet)
         })
-      }
-      if (found === 0) {
-        // something went wrong, no user wallets found for TX
-        // TODO: do something with such TXs: alert admins, etc...
-        this.logger.error(
-          client.currName, '| amount:', tx.amount, '| txid: ', tx.txid,
-          '| transaction did not land into user wallet'
-        )
       }
     })
   }

@@ -8,7 +8,8 @@ export var NotificationSchema = new mongoose.Schema({
 });
 
 NotificationSchema.statics = {
-  notify: (userId, title, message, type) => {
+  notify: function(userId, title, message, type) {
+    console.log('notify');
     let notification = new Notification({
       _id: Random.id(),
       userId: userId,
@@ -16,7 +17,9 @@ NotificationSchema.statics = {
       message: message,
       type: type
     });
-    notification.save();
+    notification.save((err) => {
+      if (err) throw err;
+    });
   }
 }
 
