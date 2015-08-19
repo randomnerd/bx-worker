@@ -19,7 +19,7 @@ export var TransactionSchema = new mongoose.Schema({
 });
 
 TransactionSchema.statics = {
-  newDeposit: function(tx, wallet) {
+  newDeposit: function(tx, wallet, confReq) {
     // save deposit
     // rawtx is the source of truth for tx amount and destination address
     // tx is the source of truth for other tx details
@@ -41,6 +41,7 @@ TransactionSchema.statics = {
     newTx.save((err) => {
       if (err) throw err;
       newTx.notifyUser();
+      if (newTx.confirmations >= confReq) newTx.matureDeposit();
     });
   }
 }

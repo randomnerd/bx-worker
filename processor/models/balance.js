@@ -14,8 +14,8 @@ export var BalanceSchema = new mongoose.Schema({
 BalanceSchema.plugin(findOrCreate);
 
 BalanceSchema.methods = {
-  change: (subject) => {
-    switch (subject.modelName) {
+  change: function(subject) {
+    switch (subject.constructor.modelName) {
       case 'Transaction':
         return this.changeWithTx(subject)
       default:
@@ -23,12 +23,12 @@ BalanceSchema.methods = {
     }
   },
 
-  changeWithTx: (tx) => {
+  changeWithTx: function(tx) {
     let change = new BalanceChange({
       _id: Random.id(),
       dstId: this._id,
       subjId: tx._id,
-      subjType: tx.modelName,
+      subjType: tx.constructor.modelName,
       amount: tx.amount,
       createdAt: new Date,
       state: 'initial'
@@ -37,14 +37,13 @@ BalanceSchema.methods = {
       if (err) throw err;
       this.pendingChanges.push(change._id);
       this.save((err) => {
-        if (err) throw err
-
+        if (err) throw err;
         // trigger balance worker here to catch the change
       });
     });
   },
 
-  changeWithParams: (params) => {
+  changeWithParams: function(params) {
     // stub
   }
 }

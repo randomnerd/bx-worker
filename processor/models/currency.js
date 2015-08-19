@@ -10,13 +10,13 @@ export var CurrencySchema = new mongoose.Schema({
 
 CurrencySchema.methods = {
   balanceFor: (userId, callback) => {
-    Balance.findOrCreate({currId: this._id, userId: userId}, {amount: 0, held: 0}, callback)
+    Balance.findOrCreate({currId: this._id, userId: userId}, {_id: Random.id(), amount: 0, held: 0}, callback)
   }
 }
 
 CurrencySchema.statics = {
   balanceFor: (currId, userId, callback) => {
-    Balance.findOrCreate({currId: currId, userId: userId}, {amount: 0, held: 0}, callback)
+    Balance.findOrCreate({currId: currId, userId: userId}, {_id: Random.id(), amount: 0, held: 0}, callback)
   }
 }
 

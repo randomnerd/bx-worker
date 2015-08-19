@@ -1,7 +1,5 @@
 import mongoose from 'mongoose'
-let Schema = mongoose.Schema;
-
-export var Transaction = new Schema({
+export var BalanceChangeSchema = new mongoose.Schema({
   _id:       String,
   srcId:     String,
   dstId:     String,
@@ -11,4 +9,7 @@ export var Transaction = new Schema({
   createdAt: Date,
   updatedAt: Date,
   state:     String // initial, pending, applied, done, canceling, canceled
-})
+}, {
+  collection: 'balance_changes'
+});
+export var BalanceChange = mongoose.model('BalanceChange', BalanceChangeSchema);

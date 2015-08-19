@@ -173,7 +173,7 @@ export class WalletWorker extends BaseWorker {
           // TODO: better handling of this situation
           if (!wallet) { return this.logger.error('Wallet not found'); }
 
-          Transaction.newDeposit(tx, wallet)
+          Transaction.newDeposit(tx, wallet, client.confReq);
         })
       }
     })
