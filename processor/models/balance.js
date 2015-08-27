@@ -1,13 +1,16 @@
 import Random from 'meteor-random'
 import mongoose from 'mongoose'
+require('mongoose-long')(mongoose);
 import findOrCreate from 'mongoose-findorcreate'
 import {BalanceChange} from './balance_change'
+export var Long = mongoose.Types.Long;
+
 export var BalanceSchema = new mongoose.Schema({
   _id:    String,
   userId: String,
   currId: String,
-  amount: Number,
-  held:   Number,
+  amount: mongoose.Schema.Types.Long,
+  held:   mongoose.Schema.Types.Long,
   pendingChanges: [String]
 });
 
@@ -35,11 +38,6 @@ BalanceSchema.methods = {
     });
     change.save((err) => {
       if (err) throw err;
-      this.pendingChanges.push(change._id);
-      this.save((err) => {
-        if (err) throw err;
-        // trigger balance worker here to catch the change
-      });
     });
   },
 

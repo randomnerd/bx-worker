@@ -4,7 +4,9 @@ export var NotificationSchema = new mongoose.Schema({
   userId:  String,
   title:   String,
   message: String,
-  type:    String
+  type:    String,
+  ack:     Boolean,
+  createdAt: Date
 });
 
 NotificationSchema.statics = {
@@ -14,7 +16,9 @@ NotificationSchema.statics = {
       userId: userId,
       title: title,
       message: message,
-      type: type
+      type: type,
+      ack: false,
+      createdAt: Date
     });
     notification.save((err) => {
       if (err) throw err;

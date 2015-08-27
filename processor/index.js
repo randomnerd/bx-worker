@@ -1,7 +1,8 @@
+import mongoose from 'mongoose'
+require('mongoose-long')(mongoose);
 import JobCollection from 'meteor-job'
 import {WalletWorker} from './workers/wallet'
 import {BalanceWorker} from './workers/balance'
-import mongoose from 'mongoose'
 
 export class Processor {
   constructor(ddp, config, logger) {
@@ -10,7 +11,6 @@ export class Processor {
     this.ddp       = ddp;
     this.config    = config;
     this.logger    = logger;
-    this.jobConfig = config.get('jobConfig');
     this.dbConfig  = config.get('mongoConfig');
     this.isRunning = false;
     this.jc.setDDP(this.ddp);
