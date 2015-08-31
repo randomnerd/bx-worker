@@ -192,7 +192,7 @@ export class WalletWorker extends BaseWorker {
 
         Wallet.findOne({address: rawtx.address}, (err, wallet) => {
           // TODO: better handling of this situation
-          if (!wallet) { return this.logger.error('Wallet not found'); }
+          if (!wallet) { return false; }
 
           Transaction.newDeposit(tx, wallet, client.confReq);
         })
