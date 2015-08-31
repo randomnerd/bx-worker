@@ -32,7 +32,7 @@ BalanceSchema.methods = {
       dstId: this._id,
       subjId: tx._id,
       subjType: tx.constructor.modelName,
-      amount: tx.amount,
+      amount: Long(tx.amount * Math.pow(10,8)),
       createdAt: new Date,
       state: 'initial'
     });

@@ -7,6 +7,7 @@ import {Transaction} from '../models/transaction'
 import {Notification} from '../models/notification'
 import {BalanceChange} from '../models/balance_change'
 import {Balance, Long} from '../models/balance'
+import async from 'async'
 
 export class BalanceWorker extends BaseWorker {
   init() {
@@ -92,7 +93,7 @@ export class BalanceWorker extends BaseWorker {
     }, callback)
   }
 
-  _applyChangeToBalance(change, dst) {
+  _applyChangeToBalance(change, dst, callback) {
     Balance.findOneAndUpdate({
       _id: (dst ? change.dstId : change.srcId),
       pendingChanges: { $ne: change._id }
@@ -101,14 +102,44 @@ export class BalanceWorker extends BaseWorker {
         amount: (dst ? change.amount : -change.amount)
       },
       $push: { pendingChanges: change._id }
-    }, (err, balance) => {
-      if (err) throw err;
-    })
+    }, callback);
+  }
+
+  _pullChange(changeId, balanceId, callback) {
+    Balance.findOneAndUpdate({
+      _id: balanceId,
+      pendingChanges: changeId
+    }, {
+      $pull: {
+        pendingChanges: changeId
+      }
+    }, callback);
   }
 
   _applyChange(change, callback) {
-    if (change.srcId) this._applyChangeToBalance(change, false);
-    if (change.dstId) this._applyChangeToBalance(change, true);
+    async.series([
+      (cb) => {
+        change.srcId ? this._applyChangeToBalance(change, false, cb) : cb(null, null);
+      },
+      (cb) => {
+        change.dstId ? this._applyChangeToBalance(change, true, cb) : cb(null, null);
+      },
+      (cb) => {
+        this._setChangeApplied(change._id, cb);
+      },
+      (cb) => {
+        change.srcId ? this._pullChange(change._id, change.srcId, cb) : cb(null, null);
+      },
+      (cb) => {
+        change.dstId ? this._pullChange(change._id, change.dstId, cb) : cb(null, null);
+      },
+      (cb) => {
+        this._setChangeDone(change._id, cb);
+      }
+    ], (err, result) => {
+      if (err) throw err;
+      console.log(result);
+    });
   }
 
 }
