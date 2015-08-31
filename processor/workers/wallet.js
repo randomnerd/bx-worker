@@ -29,9 +29,23 @@ export class WalletWorker extends BaseWorker {
     }
   }
 
+  startTimer() {
+    this.timer = setInterval(this.processAllCurrencies.bind(this), this.config.updateInterval);
+  }
+
+  stopTimer() {
+    this.timer && clearInterval(this.timer);
+  }
+
   start() {
     this.startClients();
+    this.startTimer();
     super.start();
+  }
+
+  stop() {
+    this.stopTimer();
+    super.stop();
   }
 
   getJobMap() {
@@ -97,6 +111,13 @@ export class WalletWorker extends BaseWorker {
         tx.updateConfirmations(client);
       }
     });
+  }
+
+  processAllCurrencies() {
+    for (let currId of Object.keys(this.clients)) {
+      this._processDeposits(currId);
+      this._updateDepositConfirmations(currId);
+    }
   }
 
   processDeposits(job, callback) {
