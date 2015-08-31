@@ -146,8 +146,9 @@ export class BalanceWorker extends BaseWorker {
       let userId = uids.length && uids[0];
       if (!userId) throw 'No userId found';
       let curr = result[result.length - 1];
-      let displayAmount = new Big(change.amount.toString()).div(Math.pow(10,8)).toString();
+      let displayAmount = new Big(change.amount.toString()).div(Math.pow(10, 8)).toString();
       Notification.notify(userId, '', `${displayAmount} ${curr.shortName} added to your balance`, 'addBalance');
+      this.logger.info('Done processing balanceChange', change._id);
     });
   }
 

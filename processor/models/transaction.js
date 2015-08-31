@@ -11,9 +11,8 @@ export var TransactionSchema = new mongoose.Schema({
   balanceChangeId: String,
   address:         String,
   txid:            String,
-  category:        String,
   confirmations:   Number,
-  amount:          Number,
+  amount:          mongoose.Schema.Types.Long,
   createdAt:       Date,
   updatedAt:       Date
 });
@@ -32,7 +31,6 @@ TransactionSchema.statics = {
       balanceChangeId: null,
       txid: tx.txid,
       address: tx.address,
-      category: tx.category,
       confirmations: Math.abs(tx.confirmations),
       amount: tx.amount,
       createdAt: new Date,

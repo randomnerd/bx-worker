@@ -1,9 +1,9 @@
 import Random from 'meteor-random'
 import mongoose from 'mongoose'
-require('mongoose-long')(mongoose);
 import findOrCreate from 'mongoose-findorcreate'
 import {BalanceChange} from './balance_change'
 import {Transaction} from './transaction'
+require('mongoose-long')(mongoose);
 export var Long = mongoose.Types.Long;
 
 export var BalanceSchema = new mongoose.Schema({
