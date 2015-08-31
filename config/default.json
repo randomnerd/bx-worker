@@ -12,6 +12,7 @@
   },
   "workers": {
     "wallet": {
+      "updateInterval": 2000,
       "queueName": "jobQueue",
       "currencies": {
         "nkNov8f9xuYHCMjmQ": {

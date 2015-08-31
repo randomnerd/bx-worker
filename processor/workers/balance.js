@@ -7,6 +7,7 @@ import {Transaction} from '../models/transaction'
 import {Notification} from '../models/notification'
 import {BalanceChange} from '../models/balance_change'
 import {Balance, Long} from '../models/balance'
+import {Currency} from '../models/currency'
 import async from 'async'
 
 export class BalanceWorker extends BaseWorker {
@@ -135,10 +136,18 @@ export class BalanceWorker extends BaseWorker {
       },
       (cb) => {
         this._setChangeDone(change._id, cb);
+      },
+      (cb) => {
+        Currency.findOne(change.currId, cb);
       }
     ], (err, result) => {
       if (err) throw err;
-      console.log(result);
+      let uids = _.compact(_.pluck(_.compact(result), 'userId'));
+      let userId = uids.length && uids[0];
+      if (!userId) throw 'No userId found';
+      let curr = result[result.length - 1];
+      let displayAmount = new Big(change.amount.toString()).div(Math.pow(10,8)).toString();
+      Notification.notify(userId, '', `${displayAmount} ${curr.shortName} added to your balance`, 'addBalance');
     });
   }
 

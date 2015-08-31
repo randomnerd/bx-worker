@@ -18,7 +18,7 @@ NotificationSchema.statics = {
       message: message,
       type: type,
       ack: false,
-      createdAt: Date
+      createdAt: new Date()
     });
     notification.save((err) => {
       if (err) throw err;
