@@ -22,6 +22,8 @@ BalanceSchema.methods = {
     switch (subject.constructor.modelName) {
       case 'Transaction':
         return this.changeWithTx(subject)
+      case 'Withdrawal':
+        return this.changeWithWithdrawal(subject)
       default:
         return this.changeWithParams(subject)
     }
@@ -33,7 +35,7 @@ BalanceSchema.methods = {
       dstId: this._id,
       subjId: tx._id,
       subjType: tx.constructor.modelName,
-      amount: Long(tx.amount * Math.pow(10,8)),
+      amount: tx.amount,
       createdAt: new Date,
       state: 'initial'
     });
@@ -41,6 +43,23 @@ BalanceSchema.methods = {
       if (err) throw err;
       tx.balanceChangeId = change._id;
       tx.save((err) => { if (err) throw err; });
+    });
+  },
+
+  changeWithWithdrawal: function(wd) {
+    let change = new BalanceChange({
+      _id: Random.id(),
+      dstId: this._id,
+      subjId: wd._id,
+      subjType: wd.constructor.modelName,
+      amount: -wd.amount,
+      createdAt: new Date,
+      state: 'initial'
+    });
+    change.save((err) => {
+      if (err) throw err;
+      wd.balanceChangeId = change._id;
+      wd.save((err) => { if (err) throw err; });
     });
   },
 

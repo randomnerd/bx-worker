@@ -3,6 +3,7 @@ import {BaseWorker} from './base'
 import _ from 'underscore'
 import {Wallet} from '../models/wallet'
 import {Transaction} from '../models/transaction'
+import {Withdrawal} from '../models/withdrawal'
 
 export class WalletWorker extends BaseWorker {
   init() {
@@ -51,7 +52,8 @@ export class WalletWorker extends BaseWorker {
   getJobMap() {
     return {
       newAddress: this.newAddress,
-      processDeposits: this.processDeposits
+      processDeposits: this.processDeposits,
+      sendFunds: this.sendFunds
     }
   }
 
@@ -114,9 +116,14 @@ export class WalletWorker extends BaseWorker {
   }
 
   processAllCurrencies() {
-    for (let currId of Object.keys(this.clients)) {
-      this._processDeposits(currId);
-      this._updateDepositConfirmations(currId);
+    try {
+      for (let currId of Object.keys(this.clients)) {
+        this._processDeposits(currId);
+        this._updateDepositConfirmations(currId);
+      }
+    } catch (e) {
+      console.log('Error processing currencies:');
+      console.log(e);
     }
   }
 
@@ -142,7 +149,7 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[id];
 
     client.listTransactions(null, batch, skip, (err, result) => {
-      if (err) throw 'Error listing transactions: ' + err;
+      if (err) {console.log(err) ; throw 'Error listing transactions: ' + err;}
       if (!result.transactions || result.transactions.length === 0) return;
 
       let txids = _.uniq(_.pluck(result.transactions, 'txid'));
@@ -187,6 +194,10 @@ export class WalletWorker extends BaseWorker {
 
   _processDepositTx(client, tx) {
     client.getTransaction(tx.txid, (err, result) => {
+      if (err) {
+        console.log('Error listing transaction details: ', err);
+        setTimeout(() => {this._processDepositTx(client, tx)}, 3000);
+      }
       for (let rawtx of result.details) {
         if (rawtx.category !== 'receive') continue;
 
@@ -198,6 +209,45 @@ export class WalletWorker extends BaseWorker {
         })
       }
     })
+  }
+
+  sendFunds(job, callback) {
+    let curr = this.config.currencies[job.data.currId];
+    let client = this.clients[job.data.currId];
+    if (!curr || !client) {
+      job.fail('Currency not configured');
+      return callback();
+    }
+
+    this.logger.info('Withdrawal', job.data.wdId);
+    try {
+      Withdrawal.findOne({_id: job.data.wdId, state: 'applied'}, (err, wd) => {
+        this._processWithdrawal(curr, client, wd);
+      });
+      job.done();
+    } catch (e) {
+      this.logger.error('Processing job', job, 'failed:', e.toString());
+      job.fail(e.toString());
+    } finally { callback(); }
+  }
+
+  _processWithdrawal(curr, client, wd) {
+    console.log('processWithdrawal');
+    wd.verifyBalanceChange((err, bc) => {
+      console.log('verifyBalanceChange');
+      console.log(err, bc);
+      if (err) throw err;
+      let amount = wd.amount / Math.pow(10, 8);
+      this.logger.info(`Withdrawal of ${amount} to ${wd.address}`);
+
+      // TODO: actually send funds
+      // client.sendToAddress(wd.address, amount, (err, result) => {
+      //   console.log(result);
+      // })
+      wd.txid = '0000000000';
+      wd.state = 'done';
+      wd.save();
+    });
   }
 
 }

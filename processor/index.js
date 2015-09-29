@@ -3,6 +3,7 @@ require('mongoose-long')(mongoose);
 import JobCollection from 'meteor-job'
 import {WalletWorker} from './workers/wallet'
 import {BalanceWorker} from './workers/balance'
+import {WithdrawalWorker} from './workers/withdrawal'
 
 export class Processor {
   constructor(ddp, config, logger) {
@@ -18,7 +19,8 @@ export class Processor {
     this.runningWorkers = [];
     this.availableWorkers = [
       WalletWorker,
-      BalanceWorker
+      BalanceWorker,
+      WithdrawalWorker
     ]
   }
 

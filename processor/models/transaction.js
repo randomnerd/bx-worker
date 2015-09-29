@@ -1,8 +1,9 @@
 import Random from 'meteor-random'
 import mongoose from 'mongoose'
 import {Currency} from './currency'
-import {Balance} from './balance'
+import {Long, Balance} from './balance'
 import {Notification} from './notification'
+import Big from 'big.js'
 export var TransactionSchema = new mongoose.Schema({
   _id:             String,
   userId:          String,
@@ -20,8 +21,6 @@ export var TransactionSchema = new mongoose.Schema({
 TransactionSchema.statics = {
   newDeposit: function(tx, wallet, confReq) {
     // save deposit
-    // rawtx is the source of truth for tx amount and destination address
-    // tx is the source of truth for other tx details
 
     let newTx = new Transaction({
       _id: Random.id(),
@@ -32,7 +31,7 @@ TransactionSchema.statics = {
       txid: tx.txid,
       address: tx.address,
       confirmations: Math.abs(tx.confirmations),
-      amount: tx.amount,
+      amount: Long(tx.amount * Math.pow(10,8)),
       createdAt: new Date,
       updatedAt: null
     });
@@ -45,13 +44,16 @@ TransactionSchema.statics = {
 }
 
 TransactionSchema.methods = {
+  displayAmount: function() {
+    return new Big(this.amount.toString()).div(Math.pow(10, 8)).toString();
+  },
   notifyUser: function() {
     Currency.findOne({_id: this.currId}, (err, curr) => {
       if (err) throw err;
       Notification.notify(
         this.userId,
-        `Incoming: ${this.amount} ${curr.shortName}`,
-        `${this.amount} ${curr.shortName} received at ${this.address}`,
+        `Incoming: ${this.displayAmount()} ${curr.shortName}`,
+        `${this.displayAmount()} ${curr.shortName} received at ${this.address}`,
         'newTransaction'
       );
     })
@@ -59,6 +61,7 @@ TransactionSchema.methods = {
 
   updateConfirmations: function(client) {
     client.getTransaction(this.txid, (err, txdata) => {
+      if (err) {console.log(err) ; throw 'Error listing transaction details: ' + err;}
       if (txdata.confirmations === this.confirmations) return;
 
       this.confirmations = txdata.confirmations;

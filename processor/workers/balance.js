@@ -8,6 +8,7 @@ import {Notification} from '../models/notification'
 import {BalanceChange} from '../models/balance_change'
 import {Balance, Long} from '../models/balance'
 import {Currency} from '../models/currency'
+import {Withdrawal} from '../models/withdrawal'
 import async from 'async'
 
 export class BalanceWorker extends BaseWorker {
@@ -147,7 +148,14 @@ export class BalanceWorker extends BaseWorker {
       if (!userId) throw 'No userId found';
       let curr = result[result.length - 1];
       let displayAmount = new Big(change.amount.toString()).div(Math.pow(10, 8)).toString();
-      Notification.notify(userId, '', `${displayAmount} ${curr.shortName} added to your balance`, 'addBalance');
+      switch (change.subjType) {
+        case 'Transaction':
+          Notification.notify(userId, '', `${displayAmount} ${curr.shortName} added to your balance`, 'addBalance');
+          break;
+        case 'Withdrawal':
+          Withdrawal.balanceChanged(change.subjId);
+          break;
+      }
       this.logger.info('Done processing balanceChange', change._id);
     });
   }
