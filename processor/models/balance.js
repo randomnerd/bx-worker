@@ -1,6 +1,7 @@
 import Random from 'meteor-random'
 import mongoose from 'mongoose'
 import findOrCreate from 'mongoose-findorcreate'
+import {Currency} from './currency'
 import {BalanceChange} from './balance_change'
 import {Transaction} from './transaction'
 require('mongoose-long')(mongoose);
@@ -19,6 +20,9 @@ BalanceSchema.plugin(findOrCreate);
 
 BalanceSchema.methods = {
   change: function(subject) {
+    // TODO: better behavior on this case
+    if (subject.amount.isNegative() && subject.amount.negate().greaterThan(this.amount)) return false;
+
     switch (subject.constructor.modelName) {
       case 'Transaction':
         return this.changeWithTx(subject)
@@ -32,9 +36,10 @@ BalanceSchema.methods = {
   changeWithTx: function(tx) {
     let change = new BalanceChange({
       _id: Random.id(),
-      dstId: this._id,
+      balanceId: this._id,
+      currId: this.currId,
       subjId: tx._id,
-      subjType: tx.constructor.modelName,
+      subjType: 'Transaction',
       amount: tx.amount,
       createdAt: new Date,
       state: 'initial'
@@ -46,13 +51,21 @@ BalanceSchema.methods = {
     });
   },
 
+  getCurrency: function(callback) {
+    Currency.findOne({_id: this.currId}, callback);
+  },
+
   changeWithWithdrawal: function(wd) {
+    let fee = Long.fromNumber(wd.fee);
+    let amount = Long.fromNumber(wd.amount);
+    let changeAmount = amount.add(fee).negate();
     let change = new BalanceChange({
       _id: Random.id(),
-      dstId: this._id,
+      balanceId: this._id,
+      currId: this.currId,
       subjId: wd._id,
-      subjType: wd.constructor.modelName,
-      amount: -wd.amount,
+      subjType: 'Withdrawal',
+      amount: changeAmount,
       createdAt: new Date,
       state: 'initial'
     });

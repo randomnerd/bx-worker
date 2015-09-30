@@ -95,13 +95,13 @@ export class BalanceWorker extends BaseWorker {
     }, callback)
   }
 
-  _applyChangeToBalance(change, dst, callback) {
+  _applyChangeToBalance(change, callback) {
     Balance.findOneAndUpdate({
-      _id: (dst ? change.dstId : change.srcId),
+      _id: change.balanceId,
       pendingChanges: { $ne: change._id }
     }, {
       $inc: {
-        amount: (dst ? change.amount : -change.amount)
+        amount: change.amount
       },
       $push: { pendingChanges: change._id }
     }, callback);
@@ -120,27 +120,12 @@ export class BalanceWorker extends BaseWorker {
 
   _applyChange(change, callback) {
     async.series([
-      (cb) => {
-        change.srcId ? this._applyChangeToBalance(change, false, cb) : cb(null, null);
-      },
-      (cb) => {
-        change.dstId ? this._applyChangeToBalance(change, true, cb) : cb(null, null);
-      },
-      (cb) => {
-        this._setChangeApplied(change._id, cb);
-      },
-      (cb) => {
-        change.srcId ? this._pullChange(change._id, change.srcId, cb) : cb(null, null);
-      },
-      (cb) => {
-        change.dstId ? this._pullChange(change._id, change.dstId, cb) : cb(null, null);
-      },
-      (cb) => {
-        this._setChangeDone(change._id, cb);
-      },
-      (cb) => {
-        Currency.findOne(change.currId, cb);
-      }
+      (cb) => { this._applyChangeToBalance(change, cb) },
+      (cb) => { this._setChangeApplied(change._id, cb) },
+      (cb) => { this._pullChange(change._id, change.balanceId, cb) },
+      (cb) => { change.setChangedAmount(cb) },
+      (cb) => { this._setChangeDone(change._id, cb) },
+      (cb) => { Currency.findOne(change.currId, cb) }
     ], (err, result) => {
       if (err) throw err;
       let uids = _.compact(_.pluck(_.compact(result), 'userId'));

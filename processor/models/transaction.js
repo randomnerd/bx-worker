@@ -14,6 +14,7 @@ export var TransactionSchema = new mongoose.Schema({
   txid:            String,
   confirmations:   Number,
   amount:          mongoose.Schema.Types.Long,
+  changed:         mongoose.Schema.Types.Long,
   createdAt:       Date,
   updatedAt:       Date
 });

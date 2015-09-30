@@ -15,7 +15,9 @@ export var WithdrawalSchema = new mongoose.Schema({
   balanceChangeId: String,
   address:         String,
   txid:            String,
+  fee:             mongoose.Schema.Types.Long,
   amount:          mongoose.Schema.Types.Long,
+  changed:         mongoose.Schema.Types.Long,
   state:           { type: String, default: 'initial' },
   createdAt:       Date,
   updatedAt:       Date

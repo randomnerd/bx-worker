@@ -1,11 +1,12 @@
 import mongoose from 'mongoose'
 import {Balance} from './balance'
 export var CurrencySchema = new mongoose.Schema({
-  _id:        String,
-  published:  Boolean,
-  shortName:  String,
-  name:       String,
-  status:     String
+  _id:           String,
+  published:     Boolean,
+  shortName:     String,
+  name:          String,
+  status:        String,
+  withdrawalFee: String
 });
 
 CurrencySchema.methods = {
