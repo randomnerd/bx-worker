@@ -1,18 +1,17 @@
-import Random from 'meteor-random'
-import mongoose from 'mongoose'
-import findOrCreate from 'mongoose-findorcreate'
-import {Currency} from './currency'
-import {BalanceChange} from './balance_change'
-import {Transaction} from './transaction'
+import Random from 'meteor-random';
+import mongoose from 'mongoose';
+import findOrCreate from 'mongoose-findorcreate';
+import {Currency} from './currency';
+import {BalanceChange} from './balance_change';
 require('mongoose-long')(mongoose);
-export var Long = mongoose.Types.Long;
+export const Long = mongoose.Types.Long;
 
-export var BalanceSchema = new mongoose.Schema({
-  _id:    String,
-  userId: String,
-  currId: String,
-  amount: mongoose.Schema.Types.Long,
-  held:   mongoose.Schema.Types.Long,
+export const BalanceSchema = new mongoose.Schema({
+  _id:            String,
+  userId:         String,
+  currId:         String,
+  amount:         mongoose.Schema.Types.Long,
+  held:           mongoose.Schema.Types.Long,
   pendingChanges: [String]
 });
 
@@ -24,30 +23,30 @@ BalanceSchema.methods = {
     if (subject.amount.isNegative() && subject.amount.negate().greaterThan(this.amount)) return false;
 
     switch (subject.constructor.modelName) {
-      case 'Transaction':
-        return this.changeWithTx(subject)
-      case 'Withdrawal':
-        return this.changeWithWithdrawal(subject)
-      default:
-        return this.changeWithParams(subject)
+    case 'Transaction':
+      return this.changeWithTx(subject);
+    case 'Withdrawal':
+      return this.changeWithWithdrawal(subject);
+    default:
+      return this.changeWithParams(subject);
     }
   },
 
   changeWithTx: function(tx) {
     let change = new BalanceChange({
-      _id: Random.id(),
+      _id:       Random.id(),
       balanceId: this._id,
-      currId: this.currId,
-      subjId: tx._id,
-      subjType: 'Transaction',
-      amount: tx.amount,
+      currId:    this.currId,
+      subjId:    tx._id,
+      subjType:  'Transaction',
+      amount:    tx.amount,
       createdAt: new Date,
-      state: 'initial'
+      state:     'initial'
     });
     change.save((err) => {
       if (err) throw err;
       tx.balanceChangeId = change._id;
-      tx.save((err) => { if (err) throw err; });
+      tx.save((e) => { if (e) throw e; });
     });
   },
 
@@ -60,25 +59,25 @@ BalanceSchema.methods = {
     let amount = Long.fromNumber(wd.amount);
     let changeAmount = amount.add(fee).negate();
     let change = new BalanceChange({
-      _id: Random.id(),
+      _id:       Random.id(),
       balanceId: this._id,
-      currId: this.currId,
-      subjId: wd._id,
-      subjType: 'Withdrawal',
-      amount: changeAmount,
+      currId:    this.currId,
+      subjId:    wd._id,
+      subjType:  'Withdrawal',
+      amount:    changeAmount,
       createdAt: new Date,
-      state: 'initial'
+      state:     'initial'
     });
     change.save((err) => {
       if (err) throw err;
       wd.balanceChangeId = change._id;
-      wd.save((err) => { if (err) throw err; });
+      wd.save((e) => { if (e) throw e; });
     });
   },
 
   changeWithParams: function(params) {
-    // stub
+    return params; //stub
   }
-}
+};
 
-export var Balance = mongoose.model('Balance', BalanceSchema);
+export const Balance = mongoose.model('Balance', BalanceSchema);

@@ -1,15 +1,12 @@
-import {BaseWorker} from './base'
-import Random from 'meteor-random'
-import Big from 'big.js'
-import _ from 'underscore'
-import {Wallet} from '../models/wallet'
-import {Transaction} from '../models/transaction'
-import {Notification} from '../models/notification'
-import {BalanceChange} from '../models/balance_change'
-import {Balance, Long} from '../models/balance'
-import {Currency} from '../models/currency'
-import {Withdrawal} from '../models/withdrawal'
-import async from 'async'
+import {BaseWorker} from './base';
+import Big from 'big.js';
+import _ from 'underscore';
+import {Notification} from '../models/notification';
+import {BalanceChange} from '../models/balance_change';
+import {Balance} from '../models/balance';
+import {Currency} from '../models/currency';
+import {Withdrawal} from '../models/withdrawal';
+import async from 'async';
 
 export class BalanceWorker extends BaseWorker {
   init() {
@@ -22,7 +19,7 @@ export class BalanceWorker extends BaseWorker {
     this.ddp.subscribe('balanceChangeQueue');
     this.balanceChangeObserver = this.ddp.observe('balance_changes');
     this.balanceChangeObserver.added = (id) => this.processChange(id);
-    this.balanceChangeObserver.changed = () => {}
+    this.balanceChangeObserver.changed = () => {};
   }
 
   stopBalanceChangeObserver() {
@@ -41,7 +38,7 @@ export class BalanceWorker extends BaseWorker {
 
   getJobMap() {
     return {
-    }
+    };
   }
 
   processChange(id) {
@@ -64,7 +61,7 @@ export class BalanceWorker extends BaseWorker {
       }
     }, {
       new: true
-    }, callback)
+    }, callback);
   }
 
   _setChangeApplied(id, callback) {
@@ -78,7 +75,7 @@ export class BalanceWorker extends BaseWorker {
       }
     }, {
       new: true
-    }, callback)
+    }, callback);
   }
 
   _setChangeDone(id, callback) {
@@ -92,7 +89,7 @@ export class BalanceWorker extends BaseWorker {
       }
     }, {
       new: true
-    }, callback)
+    }, callback);
   }
 
   _applyChangeToBalance(change, callback) {
@@ -120,28 +117,31 @@ export class BalanceWorker extends BaseWorker {
 
   _applyChange(change, callback) {
     async.series([
-      (cb) => { this._applyChangeToBalance(change, cb) },
-      (cb) => { this._setChangeApplied(change._id, cb) },
-      (cb) => { this._pullChange(change._id, change.balanceId, cb) },
-      (cb) => { change.setChangedAmount(cb) },
-      (cb) => { this._setChangeDone(change._id, cb) },
-      (cb) => { Currency.findOne(change.currId, cb) }
+      (cb) => { this._applyChangeToBalance(change, cb); },
+      (cb) => { this._setChangeApplied(change._id, cb); },
+      (cb) => { this._pullChange(change._id, change.balanceId, cb); },
+      (cb) => { change.setChangedAmount(cb); },
+      (cb) => { this._setChangeDone(change._id, cb); },
+      (cb) => { Currency.findOne(change.currId, cb); }
     ], (err, result) => {
       if (err) throw err;
       let uids = _.compact(_.pluck(_.compact(result), 'userId'));
       let userId = uids.length && uids[0];
-      if (!userId) throw 'No userId found';
+      if (!userId) throw new Error('No userId found');
       let curr = result[result.length - 1];
       let displayAmount = new Big(change.amount.toString()).div(Math.pow(10, 8)).toString();
       switch (change.subjType) {
-        case 'Transaction':
-          Notification.notify(userId, '', `${displayAmount} ${curr.shortName} added to your balance`, 'addBalance');
-          break;
-        case 'Withdrawal':
-          Withdrawal.balanceChanged(change.subjId);
-          break;
+      case 'Transaction':
+        Notification.notify(userId, '', `${displayAmount} ${curr.shortName} added to your balance`, 'addBalance');
+        break;
+      case 'Withdrawal':
+        Withdrawal.balanceChanged(change.subjId);
+        break;
+      default:
+        throw new Error('unknown subject type');
       }
       this.logger.info('Done processing balanceChange', change._id);
+      callback();
     });
   }
 

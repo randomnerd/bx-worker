@@ -1,15 +1,5 @@
-import {BaseWorker} from './base'
-import Random from 'meteor-random'
-import Big from 'big.js'
-import _ from 'underscore'
-import {Wallet} from '../models/wallet'
-import {Transaction} from '../models/transaction'
-import {Notification} from '../models/notification'
-import {BalanceChange} from '../models/balance_change'
-import {Balance, Long} from '../models/balance'
-import {Currency} from '../models/currency'
-import {Withdrawal} from '../models/withdrawal'
-import async from 'async'
+import {BaseWorker} from './base';
+import {Withdrawal} from '../models/withdrawal';
 
 export class WithdrawalWorker extends BaseWorker {
   init() {
@@ -22,7 +12,7 @@ export class WithdrawalWorker extends BaseWorker {
     this.ddp.subscribe('withdrawalQueue');
     this.balanceChangeObserver = this.ddp.observe('withdrawals');
     this.balanceChangeObserver.added = (id) => this.processWithdrawal(id);
-    this.balanceChangeObserver.changed = () => {}
+    this.balanceChangeObserver.changed = () => {};
   }
 
   stopBalanceChangeObserver() {
@@ -41,7 +31,7 @@ export class WithdrawalWorker extends BaseWorker {
 
   getJobMap() {
     return {
-    }
+    };
   }
 
   processWithdrawal(id) {
@@ -64,7 +54,7 @@ export class WithdrawalWorker extends BaseWorker {
       }
     }, {
       new: true
-    }, callback)
+    }, callback);
   }
 
   _setStateApplied(id, callback) {
@@ -78,7 +68,7 @@ export class WithdrawalWorker extends BaseWorker {
       }
     }, {
       new: true
-    }, callback)
+    }, callback);
   }
 
   _setStateDone(id, callback) {
@@ -92,6 +82,6 @@ export class WithdrawalWorker extends BaseWorker {
       }
     }, {
       new: true
-    }, callback)
+    }, callback);
   }
 }

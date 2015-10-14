@@ -1,9 +1,9 @@
-import bitcoin from 'bitcoin'
-import {BaseWorker} from './base'
-import _ from 'underscore'
-import {Wallet} from '../models/wallet'
-import {Transaction} from '../models/transaction'
-import {Withdrawal} from '../models/withdrawal'
+import bitcoin from 'bitcoin';
+import {BaseWorker} from './base';
+import _ from 'underscore';
+import {Wallet} from '../models/wallet';
+import {Transaction} from '../models/transaction';
+import {Withdrawal} from '../models/withdrawal';
 
 export class WalletWorker extends BaseWorker {
   init() {
@@ -13,20 +13,20 @@ export class WalletWorker extends BaseWorker {
   }
 
   startClient(id, config) {
-    this.logger.info('Starting', config.name, 'client')
+    this.logger.info('Starting', config.name, 'client');
     let client = this.clients[id] = new bitcoin.Client(config.rpc);
     client.currId = id;
     client.currName = config.name;
     client.confReq = config.confReq;
     client.getBalance((err, balance) => {
-      this.logger.info(config.name, 'balance:', balance)
-    })
+      this.logger.info(config.name, 'balance:', balance);
+    });
   }
 
   startClients() {
     let currs = this.config.currencies;
     for (let id of Object.keys(currs)) {
-      this.startClient(id, currs[id])
+      this.startClient(id, currs[id]);
     }
   }
 
@@ -54,7 +54,7 @@ export class WalletWorker extends BaseWorker {
       newAddress: this.newAddress,
       processDeposits: this.processDeposits,
       sendFunds: this.sendFunds
-    }
+    };
   }
 
   newAddress(job, callback) {
@@ -62,26 +62,26 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[currId];
     if (!client) {
       // TODO: check user & currency at database
-      job.fail("No client configured for currency " + currId);
+      job.fail('No client configured for currency ' + currId);
       return callback();
     }
     client.getNewAddress((err, address) => {
       if (err) {
-        job.fail(err.toString())
+        job.fail(err.toString());
       } else {
         this.logger.info('New address for user', userId, '/ currency', currId, '/', address);
 
-        let wallet = Wallet.newUserAddress(userId, currId, address, (err) => {
-          if (err) {
-            job.fail(err.toString())
+        let wallet = Wallet.newUserAddress(userId, currId, address, (e) => {
+          if (e) {
+            job.fail(err.toString());
           } else {
             this.logger.info('Address saved with id', wallet.id);
-            job.done()
+            job.done();
           }
         });
       }
-      callback()
-    })
+      callback();
+    });
   }
 
   updateDepositConfirmations(job, callback) {
@@ -149,12 +149,12 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[id];
 
     client.listTransactions(null, batch, skip, (err, result) => {
-      if (err) {console.log(err) ; throw 'Error listing transactions: ' + err;}
+      if (err) {console.log(err); throw new Error('Error listing transactions: ' + err); }
       if (!result.transactions || result.transactions.length === 0) return;
 
       let txids = _.uniq(_.pluck(result.transactions, 'txid'));
       // check if those ids are already in database
-      Transaction.find({txid: {$in: txids}}, (err, foundTxs) => {
+      Transaction.find({txid: {$in: txids}}, (e, foundTxs) => {
         // stop processing if transaction has been processed already
         // this usually means all transactions after this one have
         // been processed too
@@ -188,27 +188,26 @@ export class WalletWorker extends BaseWorker {
         // otherwise go to the next batch
         this._processDeposits(id, skip + batch, batch);
       });
-
-    })
+    });
   }
 
   _processDepositTx(client, tx) {
     client.getTransaction(tx.txid, (err, result) => {
       if (err) {
         console.log('Error listing transaction details: ', err);
-        setTimeout(() => {this._processDepositTx(client, tx)}, 3000);
+        setTimeout(() => { this._processDepositTx(client, tx); }, 3000);
       }
       for (let rawtx of result.details) {
         if (rawtx.category !== 'receive') continue;
 
-        Wallet.findOne({address: rawtx.address}, (err, wallet) => {
-          // TODO: better handling of this situation
-          if (!wallet) { return false; }
-
-          Transaction.newDeposit(tx, wallet, client.confReq);
-        })
+        Wallet.findOne({address: rawtx.address}, this._newDeposit);
       }
-    })
+    });
+  }
+
+  _newDeposit(tx, wallet, confReq) {
+    if (!wallet) { return false; }
+    Transaction.newDeposit(tx, wallet, confReq);
   }
 
   sendFunds(job, callback) {

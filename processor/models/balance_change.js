@@ -1,10 +1,10 @@
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
 require('mongoose-long')(mongoose);
-import {Balance} from './balance'
-import {Transaction} from './transaction'
-import {Withdrawal} from './withdrawal'
+import {Balance} from './balance';
+import {Transaction} from './transaction';
+import {Withdrawal} from './withdrawal';
 
-export var BalanceChangeSchema = new mongoose.Schema({
+export const BalanceChangeSchema = new mongoose.Schema({
   _id:       String,
   currId:    String,
   balanceId: String,
@@ -18,6 +18,7 @@ export var BalanceChangeSchema = new mongoose.Schema({
 }, {
   collection: 'balance_changes'
 });
+
 BalanceChangeSchema.methods = {
   getBalance: function(callback) {
     Balance.findOne({_id: this.balanceId}, callback);
@@ -25,12 +26,12 @@ BalanceChangeSchema.methods = {
 
   getSubjectClass: function() {
     switch (this.subjType) {
-      case 'Transaction':
-        return Transaction;
-      case 'Withdrawal':
-        return Withdrawal;
-      default:
-        return null;
+    case 'Transaction':
+      return Transaction;
+    case 'Withdrawal':
+      return Withdrawal;
+    default:
+      return null;
     }
   },
 
@@ -43,12 +44,12 @@ BalanceChangeSchema.methods = {
       this.changed = balance.amount + balance.held;
       this.updatedAt = new Date;
       this.save(callback);
-      this.getSubject((err, subject) => {
+      this.getSubject((e, subject) => {
         subject.changed = balance.amount + balance.held;
         subject.updatedAt = new Date;
         subject.save();
-      })
-    })
+      });
+    });
   }
 };
-export var BalanceChange = mongoose.model('BalanceChange', BalanceChangeSchema);
+export const BalanceChange = mongoose.model('BalanceChange', BalanceChangeSchema);

@@ -1,10 +1,10 @@
-import Random from 'meteor-random'
-import mongoose from 'mongoose'
-import {Currency} from './currency'
-import {Long, Balance} from './balance'
-import {Notification} from './notification'
-import Big from 'big.js'
-export var TransactionSchema = new mongoose.Schema({
+import Random from 'meteor-random';
+import mongoose from 'mongoose';
+import {Currency} from './currency';
+import {Long} from './balance';
+import {Notification} from './notification';
+import Big from 'big.js';
+export const TransactionSchema = new mongoose.Schema({
   _id:             String,
   userId:          String,
   currId:          String,
@@ -24,17 +24,17 @@ TransactionSchema.statics = {
     // save deposit
 
     let newTx = new Transaction({
-      _id: Random.id(),
-      userId: wallet.userId,
-      currId: wallet.currId,
-      walletId: wallet._id,
+      _id:             Random.id(),
+      userId:          wallet.userId,
+      currId:          wallet.currId,
+      walletId:        wallet._id,
       balanceChangeId: null,
-      txid: tx.txid,
-      address: tx.address,
-      confirmations: Math.abs(tx.confirmations),
-      amount: Long(tx.amount * Math.pow(10,8)),
-      createdAt: new Date,
-      updatedAt: null
+      txid:            tx.txid,
+      address:         tx.address,
+      confirmations:   Math.abs(tx.confirmations),
+      amount:          new Long(tx.amount * Math.pow(10, 8)),
+      createdAt:       new Date,
+      updatedAt:       null
     });
     newTx.save((err) => {
       if (err) throw err;
@@ -42,7 +42,7 @@ TransactionSchema.statics = {
       if (newTx.confirmations >= confReq) newTx.matureDeposit();
     });
   }
-}
+};
 
 TransactionSchema.methods = {
   displayAmount: function() {
@@ -57,12 +57,12 @@ TransactionSchema.methods = {
         `${this.displayAmount()} ${curr.shortName} received at ${this.address}`,
         'newTransaction'
       );
-    })
+    });
   },
 
   updateConfirmations: function(client) {
     client.getTransaction(this.txid, (err, txdata) => {
-      if (err) {console.log(err) ; throw 'Error listing transaction details: ' + err;}
+      if (err) {console.log(err); throw new Error('Error listing transaction details: ' + err); }
       if (txdata.confirmations === this.confirmations) return;
 
       this.confirmations = txdata.confirmations;
@@ -76,10 +76,10 @@ TransactionSchema.methods = {
   matureDeposit: function() {
     // update user balance, send notification
     Currency.balanceFor(this.currId, this.userId, (err, balance) => {
-      balance.change(this)
-    })
+      balance.change(this);
+    });
   }
 
-}
+};
 
-export var Transaction = mongoose.model('Transaction', TransactionSchema);
+export const Transaction = mongoose.model('Transaction', TransactionSchema);

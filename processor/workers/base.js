@@ -41,7 +41,7 @@ export class BaseWorker {
     for (let type of this.jobTypes) {
       let qname = this.config.queueName;
       let params = { pollInterval: 1000000000 };
-      this.queues[type] = this.jc.processJobs(qname, type, params, this.getJobMap()[type].bind(this))
+      this.queues[type] = this.jc.processJobs(qname, type, params, this.getJobMap()[type].bind(this));
     }
   }
 
@@ -57,11 +57,11 @@ export class BaseWorker {
     this.observer.added = (id) => {
       this.logger.info(this.name, ': incoming job', id);
       this.triggerQueues();
-    }
-    this.observer.changed = () => {}
+    };
+    this.observer.changed = () => {};
   }
 
   stopObserver() {
-    this.observer.stop()
+    this.observer.stop();
   }
 }
