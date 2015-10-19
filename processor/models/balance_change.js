@@ -12,6 +12,7 @@ export const BalanceChangeSchema = new mongoose.Schema({
   subjType:  String,
   amount:    mongoose.Schema.Types.Long,
   changed:   mongoose.Schema.Types.Long,
+  held:      mongoose.Schema.Types.Long,
   createdAt: Date,
   updatedAt: Date,
   state:     String // initial, pending, applied, done, canceling, canceled

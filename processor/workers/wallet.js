@@ -1,9 +1,18 @@
+import Random from 'meteor-random';
 import bitcoin from 'bitcoin';
 import {BaseWorker} from './base';
 import _ from 'underscore';
 import {Wallet} from '../models/wallet';
 import {Transaction} from '../models/transaction';
 import {Withdrawal} from '../models/withdrawal';
+import {Order} from '../models/order';
+import {TradePair} from '../models/trade_pair';
+import {Balance} from '../models/balance';
+import {BalanceChange} from '../models/balance_change';
+
+import mongoose from 'mongoose';
+require('mongoose-long')(mongoose);
+let Long = mongoose.Types.Long;
 
 export class WalletWorker extends BaseWorker {
   init() {
@@ -53,8 +62,91 @@ export class WalletWorker extends BaseWorker {
     return {
       newAddress: this.newAddress,
       processDeposits: this.processDeposits,
-      sendFunds: this.sendFunds
+      sendFunds: this.sendFunds,
+      newOrder: this.newOrder
     };
+  }
+
+  newOrder(job, callback) {
+    this.logger.info('Creating order');
+    try {
+      this._newOrder(job.data);
+      job.done();
+    } catch (e) {
+      this.logger.error('Processing job', job, 'failed:', e.toString());
+      job.fail(e.toString());
+    } finally { callback(); }
+  }
+
+  _newOrder(params) {
+    TradePair.findOne({_id: params.pairId}, (err, pair) => {
+      if (err || !pair) { this.logger.error('Pair not found'); return false; }
+      let currId = params.buy ? pair.marketCurrId : pair.currId;
+      let curr = this.config.currencies[currId];
+      let amount = parseFloat(params.amount) * Math.pow(10, 8);
+      let price = parseFloat(params.price) * Math.pow(10, 8);
+      let marketAmount = parseFloat(params.amount) * parseFloat(params.price) * Math.pow(10, 8);
+      let longAmount = Long.fromNumber(params.buy ? marketAmount : amount);
+      let change = {
+        amount: longAmount.negate(),
+        held: longAmount
+      };
+      Balance.verifyAmount({
+        userId: params.userId,
+        currId: currId,
+        amount: params.buy ? marketAmount: amount,
+      }, (error, balance) => {
+        if (error || !balance) {
+          this.logger.error('Unable to verify balance');
+          throw new Error('Unable to verify balance');
+        }
+        Balance.findOneAndUpdate({_id: balance._id}, {$inc: change}, {new: true}, (e, newBalance) => {
+          if (e || !newBalance) {
+            this.logger.error('Unable to update balance');
+            throw new Error('Unable to update balance');
+          }
+          let orderId = Random.id();
+          let change = new BalanceChange({
+            _id:       Random.id(),
+            balanceId: newBalance._id,
+            currId:    newBalance.currId,
+            subjId:    orderId,
+            subjType:  'Order',
+            amount:    longAmount.negate(),
+            createdAt: new Date(),
+            state:     'done'
+          });
+          change.save((changeSaveErr) => {
+            if (changeSaveErr) {
+              this.logger.error('Unable to save balancechange');
+              throw new Error('Unable to save balancechange');
+            };
+            console.log('saved balancechange');
+            let order = new Order({
+              _id:       orderId,
+              pairId:    params.pairId,
+              userId:    params.userId,
+              buy:       params.buy,
+              amount:    Long.fromNumber(amount),
+              price:     Long.fromNumber(price),
+              remain:    Long.fromNumber(amount),
+              complete:  false,
+              canceled:  false,
+              fee:       0,
+              createdAt: new Date()
+            });
+            console.log('created order');
+            order.save((orderSaveErr) => {
+              if (orderSaveErr) {
+                this.logger.error('Unable to save order');
+                throw new Error('Unable to save order');
+              }
+              console.log('saved order');
+            });
+          });
+        });
+      })
+    })
   }
 
   newAddress(job, callback) {

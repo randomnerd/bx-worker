@@ -12,10 +12,10 @@
   },
   "workers": {
     "wallet": {
-      "updateInterval": 5000,
+      "updateInterval": 10000,
       "queueName": "jobQueue",
       "currencies": {
-        "rBo6cD6cRA5BioEHc": {
+        "LvNRE4MTFTW276sSZ": {
           "name": "Bitcoin",
           "confReq": 3,
           "rpc": {

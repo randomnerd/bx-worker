@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import findOrCreate from 'mongoose-findorcreate';
 import {Currency} from './currency';
 import {BalanceChange} from './balance_change';
+import {TradePair} from './trade_pair';
+
 require('mongoose-long')(mongoose);
 export const Long = mongoose.Types.Long;
 
@@ -17,22 +19,32 @@ export const BalanceSchema = new mongoose.Schema({
 
 BalanceSchema.plugin(findOrCreate);
 
+BalanceSchema.statics = {
+  verifyAmount: function(params, callback) {
+    let {userId, currId, amount} = params;
+    console.log('verify amount', params);
+    Balance.findOne({userId: userId, currId: currId, amount: {$gte: amount}}, callback);
+  }
+};
+
 BalanceSchema.methods = {
-  change: function(subject) {
+  change: function(subject, callback) {
     // TODO: better behavior on this case
     if (subject.amount.isNegative() && subject.amount.negate().greaterThan(this.amount)) return false;
 
     switch (subject.constructor.modelName) {
     case 'Transaction':
-      return this.changeWithTx(subject);
+      return this.changeWithTx(subject, callback);
     case 'Withdrawal':
-      return this.changeWithWithdrawal(subject);
+      return this.changeWithWithdrawal(subject, callback);
+    case 'Trade':
+      return this.changeWithTrade(subject, callback);
     default:
-      return this.changeWithParams(subject);
+      return this.changeWithParams(subject, callback);
     }
   },
 
-  changeWithTx: function(tx) {
+  changeWithTx: function(tx, callback) {
     let change = new BalanceChange({
       _id:       Random.id(),
       balanceId: this._id,
@@ -46,7 +58,10 @@ BalanceSchema.methods = {
     change.save((err) => {
       if (err) throw err;
       tx.balanceChangeId = change._id;
-      tx.save((e) => { if (e) throw e; });
+      tx.save((e) => {
+        if (e) throw e;
+        if (callback) callback(null);
+      });
     });
   },
 
@@ -54,7 +69,7 @@ BalanceSchema.methods = {
     Currency.findOne({_id: this.currId}, callback);
   },
 
-  changeWithWithdrawal: function(wd) {
+  changeWithWithdrawal: function(wd, callback) {
     let fee = Long.fromNumber(wd.fee);
     let amount = Long.fromNumber(wd.amount);
     let changeAmount = amount.add(fee).negate();
@@ -71,8 +86,59 @@ BalanceSchema.methods = {
     change.save((err) => {
       if (err) throw err;
       wd.balanceChangeId = change._id;
-      wd.save((e) => { if (e) throw e; });
+      wd.save((e) => {
+        if (e) throw e;
+        if (callback) callback(null);
+      });
     });
+  },
+
+  changeWithTrade(trade, callback) {
+    let longZero = Long.fromNumber(0);
+    let amount   = longZero;
+    let held     = longZero;
+
+    TradePair.findOne({_id: trade.pairId}, (err, pair) => {
+      let buy    = this.userId === trade.buyerId;
+      let market = this.currId === pair.marketCurrId;
+
+
+      if (buy) {
+        if (market) {
+          held = trade.marketAmount().negate();
+        } else {
+          amount = trade.amount;
+        }
+      } else {
+        if (market) {
+          amount = trade.marketAmount();
+        } else {
+          held = trade.amount.negate();
+        }
+      }
+      Balance.findOneAndUpdate({
+        _id: this._id
+      }, {
+        $inc: {
+          amount: amount,
+          held: held
+        }
+      }, callback);
+
+      if (amount.notEquals(longZero)) {
+        let change = new BalanceChange({
+          _id: Random.id(),
+          balanceId: this._id,
+          currId: this.currId,
+          subjId: trade._id,
+          subjType: 'Trade',
+          amount: amount,
+          createdAt: new Date(),
+          state: 'done'
+        });
+      }
+    });
+
   },
 
   changeWithParams: function(params) {

@@ -4,6 +4,7 @@ import JobCollection from 'meteor-job';
 import {WalletWorker} from './workers/wallet';
 import {BalanceWorker} from './workers/balance';
 import {WithdrawalWorker} from './workers/withdrawal';
+import {OrderWorker} from './workers/order';
 
 export class Processor {
   constructor(ddp, config, logger) {
@@ -20,7 +21,8 @@ export class Processor {
     this.availableWorkers = [
       WalletWorker,
       BalanceWorker,
-      WithdrawalWorker
+      WithdrawalWorker,
+      OrderWorker
     ];
   }
 
