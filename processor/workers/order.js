@@ -2,6 +2,7 @@ import {BaseWorker} from './base';
 import {Withdrawal} from '../models/withdrawal';
 import {Order} from '../models/order';
 import {Trade} from '../models/trade';
+import {OrderBookItem} from '../models/order_book_item';
 
 export class OrderWorker extends BaseWorker {
   init() {

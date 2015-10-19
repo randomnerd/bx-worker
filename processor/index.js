@@ -5,6 +5,7 @@ import {WalletWorker} from './workers/wallet';
 import {BalanceWorker} from './workers/balance';
 import {WithdrawalWorker} from './workers/withdrawal';
 import {OrderWorker} from './workers/order';
+import OrderBookWorker from './workers/order_book';
 
 export class Processor {
   constructor(ddp, config, logger) {
@@ -22,7 +23,8 @@ export class Processor {
       WalletWorker,
       BalanceWorker,
       WithdrawalWorker,
-      OrderWorker
+      OrderWorker,
+      OrderBookWorker
     ];
   }
 
