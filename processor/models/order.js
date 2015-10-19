@@ -1,7 +1,11 @@
 import Random from 'meteor-random';
 import mongoose from 'mongoose';
+require('mongoose-long')(mongoose);
+let Long = mongoose.Types.Long;
+
 import async from 'async';
 import {Trade} from './trade';
+import Big from 'big.js';
 
 export const OrderSchema = new mongoose.Schema({
   _id:        String,
@@ -32,6 +36,22 @@ OrderSchema.methods = {
 
       })
     })
+  },
+
+  marketAmount: function() {
+    // FIXME: crazy shit here
+    let bigAmount = Big((this.amount.toNumber()/Math.pow(10,8)).toString());
+    let bigPrice  = Big((this.price.toNumber()/Math.pow(10,8)).toString());
+    let bigMarketAmount = bigAmount.mul(bigPrice).mul(Big(Math.pow(10, 8)));
+    return Long.fromString(bigMarketAmount.toString());
+  },
+
+  marketRemain: function() {
+    // FIXME: crazy shit here
+    let bigRemain = Big((this.remain.toNumber()/Math.pow(10,8)).toString());
+    let bigPrice  = Big((this.price.toNumber()/Math.pow(10,8)).toString());
+    let bigMarketRemian = bigRemain.mul(bigPrice).mul(Big(Math.pow(10, 8)));
+    return Long.fromString(bigMarketRemian.toString());
   },
 
   processMatch(order, callback) {

@@ -63,7 +63,8 @@ export class WalletWorker extends BaseWorker {
       newAddress: this.newAddress,
       processDeposits: this.processDeposits,
       sendFunds: this.sendFunds,
-      newOrder: this.newOrder
+      newOrder: this.newOrder,
+      cancelOrder: this.cancelOrder
     };
   }
 
@@ -76,6 +77,52 @@ export class WalletWorker extends BaseWorker {
       this.logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());
     } finally { callback(); }
+  }
+
+  cancelOrder(job, callback) {
+    this.logger.info('Canceling order');
+    try {
+      this._cancelOrder(job.data.id);
+      job.done();
+    } catch (e) {
+      this.logger.error('Processing job', job, 'failed:', e.toString());
+      job.fail(e.toString());
+    } finally { callback(); }
+  }
+
+  _cancelOrder(id) {
+    Order.findOneAndUpdate({_id: id, canceled: false}, {$set: {canceled: true}}, {new: true}, (err, order) => {
+      TradePair.findOne({_id: order.pairId}, (pairErr, pair) => {
+        let currId = order.buy ? pair.marketCurrId : pair.currId;
+        let amount = order.buy ? order.marketRemain() : order.remain;
+        Balance.findOneAndUpdate({
+          userId: order.userId,
+          currId: currId
+        }, {
+          $inc: {
+            held: amount.negate(),
+            amount: amount
+          }
+        }, {new: true}, (orderErr, balance) => {
+          let change = new BalanceChange({
+            _id:       Random.id(),
+            balanceId: balance._id,
+            currId:    currId,
+            subjId:    order._id,
+            subjType:  'Order',
+            amount:    amount,
+            createdAt: new Date(),
+            state:     'done'
+          });
+          change.save((changeSaveErr) => {
+            if (changeSaveErr) {
+              this.logger.error('Unable to save balancechange');
+              throw new Error('Unable to save balancechange');
+            };
+          });
+        })
+      })
+    });
   }
 
   _newOrder(params) {
