@@ -103,7 +103,7 @@ OrderSchema.methods = {
     };
 
     console.log('looking for matches', params);
-    Order.find(params, options, callback);
+    Order.find(params, null, options, callback);
   }
 };
 
