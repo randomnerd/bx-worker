@@ -101,6 +101,7 @@ BalanceSchema.methods = {
       let sell   = this.userId === trade.sellerId;
       let market = this.currId === pair.marketCurrId;
 
+      console.log(buy, sell, market);
 
       if (market) {
         if (buy)  held.add(trade.marketAmount().negate());
@@ -109,21 +110,6 @@ BalanceSchema.methods = {
         if (buy)  amount.add(trade.amount);
         if (sell) held.add(trade.amount.negate());
       }
-
-      // if (buy) {
-      //   if (market) {
-      //     held = trade.marketAmount().negate();
-      //   } else {
-      //     amount = trade.amount;
-      //   }
-      // }
-      // if (sell) {
-      //   if (market) {
-      //     amount = trade.marketAmount();
-      //   } else {
-      //     held = trade.amount.negate();
-      //   }
-      // }
 
       Balance.findOneAndUpdate({
         _id: this._id
