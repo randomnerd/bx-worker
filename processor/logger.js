@@ -1,7 +1,13 @@
 import winston from 'winston';
 
-winston.cli();
-winston.remove(winston.transports.Console);
-winston.add(winston.transports.Console, {timestamp: true, colorize: true});
+let logger = new winston.Logger({
+  transports: [
+    new winston.transports.Console({
+      timestamp: true,
+      prettyPrint: true,
+      colorize: true
+    })
+  ]
+});
 
-export default winston;
+export default logger;

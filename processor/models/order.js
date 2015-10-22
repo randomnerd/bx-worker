@@ -6,6 +6,7 @@ let Long = mongoose.Types.Long;
 import async from 'async';
 import {Trade} from './trade';
 import Big from 'big.js';
+import logger from '../logger';
 
 export const OrderSchema = new mongoose.Schema({
   _id:        String,
@@ -28,13 +29,13 @@ OrderSchema.statics = {};
 OrderSchema.methods = {
   process: function() {
     this.findMatches((err, matches) => {
-      if (err) { console.log(err) };
-      if (!matches.length) { console.log('no matches found'); return; };
+      if (err) return logger.error(err);
+      if (!matches.length) return logger.info('no matches found');
 
       async.mapSeries(matches, (item, callback) => {
         this.processMatch(item, callback);
       }, (err) => {
-        console.log('all matches processed');
+        logger.info('all matches processed');
       })
     })
   },
@@ -56,7 +57,7 @@ OrderSchema.methods = {
   },
 
   processMatch(order, callback) {
-    console.log('processing match', order);
+    logger.info('processing match', order._doc);
     let tradeAmount = this.remain.greaterThan(order.remain) ? order.remain : this.remain;
     let minPrice = this.price.lessThan(order.price) ? this.price : order.price;
     let maxPrice = this.price.lessThan(order.price) ? order.price : this.price;
@@ -102,7 +103,6 @@ OrderSchema.methods = {
       }
     };
 
-    console.log('looking for matches', params);
     Order.find(params, null, options, callback);
   }
 };

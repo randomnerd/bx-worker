@@ -1,5 +1,6 @@
 import {BaseWorker} from './base';
 import {Withdrawal} from '../models/withdrawal';
+import logger from '../logger';
 
 export class WithdrawalWorker extends BaseWorker {
   init() {
@@ -35,9 +36,9 @@ export class WithdrawalWorker extends BaseWorker {
   }
 
   processWithdrawal(id) {
-    this.logger.info(`${this.name}: Processing Withdrawal ${id}`);
+    logger.info(`${this.name}: Processing Withdrawal ${id}`);
     this._setStatePending(id, (err, obj) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       if (!obj) return;
       obj.doBalanceChange();
     });

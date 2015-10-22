@@ -5,6 +5,7 @@ import {Balance} from './balance';
 import {BalanceChange} from './balance_change';
 require('mongoose-long')(mongoose);
 export const Long = mongoose.Types.Long;
+import logger from '../logger';
 
 export const WithdrawalSchema = new mongoose.Schema({
   _id:             String,
@@ -29,7 +30,7 @@ WithdrawalSchema.statics = {
     }, {
       $set: { state: 'applied' }
     }, (e, wd) => {
-      if (e) throw e;
+      if (e) return logger.error(e);
       wd.sendFunds();
     });
   }
@@ -42,7 +43,7 @@ WithdrawalSchema.methods = {
       currId: this.currId,
       amount: { $gte: this.amount }
     }, (err, balance) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       callback(err, balance);
     });
   },
@@ -61,7 +62,7 @@ WithdrawalSchema.methods = {
 
   sendFunds: function() {
     this.verifyBalanceChange((err) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       let job = new Job('jobQueue', 'sendFunds', {currId: this.currId, wdId: this._id});
       job.save();
     });

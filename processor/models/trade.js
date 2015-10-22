@@ -7,6 +7,7 @@ import {TradePair} from './trade_pair';
 import {Balance} from './balance';
 import {Order} from './order';
 import {Currency} from './currency';
+import logger from '../logger';
 
 export const TradeSchema = new mongoose.Schema({
   _id:        String,
@@ -37,30 +38,33 @@ TradeSchema.methods = {
 
   moveFunds: function(callback) {
     TradePair.findOne({_id: this.pairId}, (err, pair) => {
-      async.series([
-        // move buyer funds
-        (cb) => {
-          Currency.balanceFor(pair.currId, this.buyerId, (e, balance) => {
-            balance.change(this, cb);
-          });
-        },
-        (cb) => {
-          Currency.balanceFor(pair.marketCurrId, this.buyerId, (e, balance) => {
-            balance.change(this, cb);
-          })
-        },
-        // move seller funds
-        (cb) => {
+
+      let series = [];
+      series.push((cb) => {
+        Currency.balanceFor(pair.currId, this.buyerId, (e, balance) => {
+          balance.change(this, cb);
+        });
+      });
+      series.push((cb) => {
+        Currency.balanceFor(pair.marketCurrId, this.buyerId, (e, balance) => {
+          balance.change(this, cb);
+        });
+      });
+
+      if (this.buyerId !== this.sellerId) {
+        series.push((cb) => {
           Currency.balanceFor(pair.currId, this.sellerId, (e, balance) => {
             balance.change(this, cb);
           });
-        },
-        (cb) => {
+        });
+        series.push((cb) => {
           Currency.balanceFor(pair.marketCurrId, this.sellerId, (e, balance) => {
             balance.change(this, cb);
           });
-        }
-      ], (err, ret) => { callback(err); });
+        });
+      }
+
+      async.series(series, (err, ret) => { callback(err); });
     });
   },
 
@@ -84,7 +88,7 @@ TradeSchema.methods = {
           new: true
         }, (err, order) => {
           if (!order.remain.equals(Long.fromNumber(0))) return cb(null);
-          Order.update({_id: order._id}, {$set: {complete: true}}, cb);
+          Order.update({_id: order._id}, {$set: {complete: true}, $push: {trades: this._id}}, cb);
         });
       },
       (cb) => {
@@ -97,7 +101,7 @@ TradeSchema.methods = {
           new: true
         }, (err, order) => {
           if (!order.remain.equals(Long.fromNumber(0))) return cb(null);
-          Order.update({_id: order._id}, {$set: {complete: true}}, cb);
+          Order.update({_id: order._id}, {$set: {complete: true}, $push: {trades: this._id}}, cb);
         });
       }
     ], callback);

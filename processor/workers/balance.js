@@ -7,6 +7,7 @@ import {Balance} from '../models/balance';
 import {Currency} from '../models/currency';
 import {Withdrawal} from '../models/withdrawal';
 import async from 'async';
+import logger from '../logger';
 
 export class BalanceWorker extends BaseWorker {
   init() {
@@ -42,9 +43,9 @@ export class BalanceWorker extends BaseWorker {
   }
 
   processChange(id) {
-    this.logger.info(`${this.name}: Processing BalanceChange ${id}`);
+    logger.info(`${this.name}: Processing BalanceChange ${id}`);
     this._setChangePending(id, (err, change) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       if (!change) return;
       this._applyChange(change);
     });
@@ -124,10 +125,10 @@ export class BalanceWorker extends BaseWorker {
       (cb) => { this._setChangeDone(change._id, cb); },
       (cb) => { Currency.findOne(change.currId, cb); }
     ], (err, result) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       let uids = _.compact(_.pluck(_.compact(result), 'userId'));
       let userId = uids.length && uids[0];
-      if (!userId) throw new Error('No userId found');
+      if (!userId) return logger.error('No userId found');
       let curr = result[result.length - 1];
       let displayAmount = new Big(change.amount.toString()).div(Math.pow(10, 8)).toString();
       switch (change.subjType) {
@@ -138,9 +139,9 @@ export class BalanceWorker extends BaseWorker {
         Withdrawal.balanceChanged(change.subjId);
         break;
       default:
-        throw new Error('unknown subject type');
+        return logger.error('unknown subject type');
       }
-      this.logger.info('Done processing balanceChange', change._id);
+      logger.info('Done processing balanceChange', change._id);
       if (typeof callback === 'function') callback();
     });
   }

@@ -1,5 +1,6 @@
 import Random from 'meteor-random';
 import bitcoin from 'bitcoin';
+import Job from 'meteor-job';
 import {BaseWorker} from './base';
 import _ from 'underscore';
 import {Wallet} from '../models/wallet';
@@ -51,12 +52,29 @@ export class WalletWorker extends BaseWorker {
   start() {
     this.startClients();
     this.startTimer();
+    this.startOrderObserver();
     super.start();
   }
 
   stop() {
+    this.stopOrderObserver();
     this.stopTimer();
     super.stop();
+  }
+
+  startOrderObserver() {
+    this.ddp.subscribe('orderQueue');
+    this.orderObserver = this.ddp.observe('orders');
+    this.orderObserver.added = (id) => {
+      let job = new Job('jobQueue', 'processOrder', {id: id});
+      job.save();
+    };
+    this.orderObserver.changed = () => {};
+    this.orderObserver.removed = () => {};
+  }
+
+  stopOrderObserver() {
+    this.orderObserver && this.orderObserver.stop();
   }
 
   getJobMap() {
@@ -65,7 +83,8 @@ export class WalletWorker extends BaseWorker {
       processDeposits: this.processDeposits,
       sendFunds: this.sendFunds,
       newOrder: this.newOrder,
-      cancelOrder: this.cancelOrder
+      cancelOrder: this.cancelOrder,
+      processOrder: this.processOrder
     };
   }
 
@@ -78,6 +97,23 @@ export class WalletWorker extends BaseWorker {
       logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());
     } finally { callback(); }
+  }
+
+  processOrder(job, callback) {
+    try {
+      this._processOrder(job.data.id);
+      job.done();
+    } catch (e) {
+      logger.error('Processing job', job, 'failed:', e.toString());
+      job.fail(e.toString());
+    } finally { callback(); }
+  }
+
+  _processOrder(id) {
+    logger.info(`${this.name}: Processing Order ${id}`);
+    Order.findOne({_id: id}, (err, order) => {
+      order.process();
+    })
   }
 
   cancelOrder(job, callback) {
@@ -117,10 +153,7 @@ export class WalletWorker extends BaseWorker {
             state:     'done'
           });
           change.save((changeSaveErr) => {
-            if (changeSaveErr) {
-              logger.error('Unable to save balancechange');
-              throw new Error('Unable to save balancechange');
-            };
+            if (changeSaveErr) logger.error(changeSaveErr);
           });
         })
       })
@@ -146,15 +179,9 @@ export class WalletWorker extends BaseWorker {
         currId: currId,
         amount: params.buy ? marketAmount: amount,
       }, (error, balance) => {
-        if (error || !balance) {
-          logger.error('Unable to verify balance');
-          throw new Error('Unable to verify balance');
-        }
+        if (error || !balance) return logger.error('Unable to verify balance', error);
         Balance.findOneAndUpdate({_id: balance._id}, {$inc: change}, {new: true}, (e, newBalance) => {
-          if (e || !newBalance) {
-            logger.error('Unable to update balance');
-            throw new Error('Unable to update balance');
-          }
+          if (e || !newBalance) return logger.error('Unable to update balance', e);
           let orderId = Random.id();
           let change = new BalanceChange({
             _id:       Random.id(),
@@ -167,11 +194,7 @@ export class WalletWorker extends BaseWorker {
             state:     'done'
           });
           change.save((changeSaveErr) => {
-            if (changeSaveErr) {
-              logger.error('Unable to save balancechange');
-              throw new Error('Unable to save balancechange');
-            };
-            console.log('saved balancechange');
+            if (changeSaveErr) return logger.error('Unable to save balancechange', changeSaveErr);
             let order = new Order({
               _id:       orderId,
               pairId:    params.pairId,
@@ -185,13 +208,8 @@ export class WalletWorker extends BaseWorker {
               fee:       0,
               createdAt: new Date()
             });
-            console.log('created order');
             order.save((orderSaveErr) => {
-              if (orderSaveErr) {
-                logger.error('Unable to save order');
-                throw new Error('Unable to save order');
-              }
-              console.log('saved order');
+              if (orderSaveErr) logger.error('Unable to save order', orderSaveErr);
             });
           });
         });
@@ -291,10 +309,7 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[id];
 
     client.listTransactions(null, batch, skip, (err, result) => {
-      if (err) {
-        logger.error(err);
-        throw new Error('Error listing transactions: ' + err);
-      }
+      if (err) return logger.error(err);
       if (!result.transactions || result.transactions.length === 0) return;
 
       let txids = _.uniq(_.pluck(result.transactions, 'txid'));
@@ -385,9 +400,7 @@ export class WalletWorker extends BaseWorker {
   _processWithdrawal(curr, client, wd) {
     console.log('processWithdrawal');
     wd.verifyBalanceChange((err, bc) => {
-      console.log('verifyBalanceChange');
-      console.log(err, bc);
-      if (err) throw err;
+      if (err) return logger.error(err);
       let amount = wd.amount / Math.pow(10, 8);
       logger.info(`Withdrawal of ${amount} to ${wd.address}`);
 

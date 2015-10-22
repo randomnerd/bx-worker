@@ -4,6 +4,7 @@ import findOrCreate from 'mongoose-findorcreate';
 import {Currency} from './currency';
 import {BalanceChange} from './balance_change';
 import {TradePair} from './trade_pair';
+import logger from '../logger';
 
 require('mongoose-long')(mongoose);
 export const Long = mongoose.Types.Long;
@@ -20,7 +21,6 @@ export const BalanceSchema = new mongoose.Schema({
 BalanceSchema.statics = {
   verifyAmount: function(params, callback) {
     let {userId, currId, amount} = params;
-    console.log('verify amount', params);
     Balance.findOne({userId: userId, currId: currId, amount: {$gte: amount}}, callback);
   }
 };
@@ -54,10 +54,10 @@ BalanceSchema.methods = {
       state:     'initial'
     });
     change.save((err) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       tx.balanceChangeId = change._id;
       tx.save((e) => {
-        if (e) throw e;
+        if (e) return logger.error(e);
         if (callback) callback(null);
       });
     });
@@ -82,10 +82,10 @@ BalanceSchema.methods = {
       state:     'initial'
     });
     change.save((err) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       wd.balanceChangeId = change._id;
       wd.save((e) => {
-        if (e) throw e;
+        if (e) return logger.error(e);
         if (callback) callback(null);
       });
     });
@@ -101,7 +101,6 @@ BalanceSchema.methods = {
       let sell   = this.userId === trade.sellerId;
       let market = this.currId === pair.marketCurrId;
 
-
       if (market) {
         if (buy)  held = held.add(trade.marketAmount().negate());
         if (sell) amount = amount.add(trade.marketAmount());
@@ -109,10 +108,6 @@ BalanceSchema.methods = {
         if (buy)  amount = amount.add(trade.amount);
         if (sell) held = held.add(trade.amount.negate());
       }
-
-      let str1 = buy ? 'buy' : 'sell';
-      let str2 = market ? 'market' : 'currency';
-      console.log(`${str1} ${str2}`, amount, held);
 
       Balance.findOneAndUpdate({
         _id: this._id

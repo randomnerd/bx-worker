@@ -5,11 +5,11 @@ import Random from 'meteor-random';
 
 import {Order} from '../models/order';
 import {OrderBookItem} from '../models/order_book_item';
+import logger from '../logger';
 
 export default class OrderBookWorker {
   constructor(processor) {
     this.ddp    = processor.ddp;
-    this.logger = processor.logger;
     this.book   = {};
   }
 
@@ -26,7 +26,7 @@ export default class OrderBookWorker {
 
   resetOrders() {
     OrderBookItem.remove({}, (err, ret) => {
-      if (err) this.logger.error('Error resetting orderbook:', err);
+      if (err) logger.error('Error resetting orderbook:', err);
     });
   }
 
@@ -64,7 +64,6 @@ export default class OrderBookWorker {
   }
 
   orderRemoved(id, oldValue) {
-    console.log('orderRemoved', id, oldValue);
     let amount = Long.fromNumber(oldValue.amount);
     let price = Long.fromNumber(oldValue.price);
     this.addAmount(oldValue.pairId, price, amount.negate(), oldValue.buy);

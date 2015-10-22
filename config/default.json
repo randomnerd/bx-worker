@@ -14,10 +14,7 @@
     "wallet": {
       "updateInterval": 10000,
       "queueName": "jobQueue",
-      "currencies": {},
-      "balance": {
-        "queueName": "balanceQueue"
-      }
+      "currencies": {}
     }
   }
 }

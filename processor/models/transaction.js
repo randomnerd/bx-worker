@@ -39,7 +39,7 @@ TransactionSchema.statics = {
       updatedAt:       null
     });
     newTx.save((err) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       newTx.notifyUser();
       if (newTx.confirmations >= confReq) newTx.matureDeposit();
     });
@@ -52,7 +52,7 @@ TransactionSchema.methods = {
   },
   notifyUser: function() {
     Currency.findOne({_id: this.currId}, (err, curr) => {
-      if (err) throw err;
+      if (err) return logger.error(err);
       Notification.notify(
         this.userId,
         `Incoming: ${this.displayAmount()} ${curr.shortName}`,
@@ -64,11 +64,7 @@ TransactionSchema.methods = {
 
   updateConfirmations: function(client) {
     client.getTransaction(this.txid, (err, txdata) => {
-      if (err) {
-        let msg = 'Error listing transaction details';
-        logger.error(msg, err);
-        throw new Error(msg, err);
-      }
+      if (err) return logger.error(msg, err);
       if (txdata.confirmations === this.confirmations) return;
 
       this.confirmations = txdata.confirmations;

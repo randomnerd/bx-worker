@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import logger from '../logger';
 export const NotificationSchema = new mongoose.Schema({
   _id:       String,
   userId:    String,
@@ -21,7 +22,7 @@ NotificationSchema.statics = {
       createdAt: new Date()
     });
     notification.save((err) => {
-      if (err) throw err;
+      if (err) logger.error(err);
     });
   }
 };

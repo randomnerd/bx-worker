@@ -4,8 +4,8 @@ import JobCollection from 'meteor-job';
 import {WalletWorker} from './workers/wallet';
 import {BalanceWorker} from './workers/balance';
 import {WithdrawalWorker} from './workers/withdrawal';
-import {OrderWorker} from './workers/order';
 import OrderBookWorker from './workers/order_book';
+import logger from './logger';
 
 export class Processor {
   constructor(ddp, config, logger) {
@@ -13,7 +13,6 @@ export class Processor {
     this.jc        = JobCollection;
     this.ddp       = ddp;
     this.config    = config;
-    this.logger    = logger;
     this.dbConfig  = config.get('mongoConfig');
     this.isRunning = false;
     this.jc.setDDP(this.ddp);
@@ -23,31 +22,30 @@ export class Processor {
       WalletWorker,
       BalanceWorker,
       WithdrawalWorker,
-      OrderWorker,
       OrderBookWorker
     ];
   }
 
   connectDb(cb) {
-    this.logger.info('Connecting mongo...');
+    logger.info('Connecting mongo...');
     let conf = this.dbConfig;
     let url = `mongodb://${conf.host}:${conf.port}/${conf.dbName}`;
     this.mongo.connect(url, () => {
-      this.logger.info('Connected mongo');
+      logger.info('Connected mongo');
       if (typeof cb === 'function') cb();
     });
   }
 
   disconnectDb(cb) {
-    this.logger.info('Disconnecting mongo...');
+    logger.info('Disconnecting mongo...');
     this.mongo.disconnect(() => {
-      this.logger.info('Disconnected mongo');
+      logger.info('Disconnected mongo');
       if (typeof cb === 'function') cb();
     });
   }
 
   start() {
-    this.logger.info('Starting job processing');
+    logger.info('Starting job processing');
     this.connectDb(() => {
       this.startWorkers();
       this.isRunning = true;

@@ -1,10 +1,11 @@
+import logger from '../logger';
+
 export class BaseWorker {
   constructor(processor) {
     this.jc        = processor.jc;
     this.ddp       = processor.ddp;
     this.mongo     = processor.mongo;
     this.models    = processor.models;
-    this.logger    = processor.logger;
     this.queues    = {};
     this.processor = processor;
 
@@ -17,7 +18,7 @@ export class BaseWorker {
   }
 
   start() {
-    this.logger.info(this.name, 'starting');
+    logger.info(this.name, 'starting');
     this.jobMap = this.getJobMap();
     this.jobTypes = Object.keys(this.jobMap);
     this.startQueues();
@@ -25,7 +26,7 @@ export class BaseWorker {
   }
 
   stop() {
-    this.logger.info(this.name, 'stopping');
+    logger.info(this.name, 'stopping');
     this.stopObserver();
     this.stopQueues();
   }
@@ -53,11 +54,9 @@ export class BaseWorker {
   startObserver() {
     this.ddp.subscribe(this.config.queueName);
     this.observer = this.ddp.observe(this.config.queueName);
-    this.observer.added = (id) => {
-      this.logger.info(this.name, ': incoming job', id);
-      this.triggerQueues();
-    };
+    this.observer.added = (id) => this.triggerQueues();
     this.observer.changed = () => {};
+    this.observer.removed = () => {};
   }
 
   stopObserver() {
