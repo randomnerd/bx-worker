@@ -135,7 +135,8 @@ export class WalletWorker extends BaseWorker {
       let amount = parseFloat(params.amount) * Math.pow(10, 8);
       let price = parseFloat(params.price) * Math.pow(10, 8);
       let marketAmount = parseFloat(params.amount) * parseFloat(params.price) * Math.pow(10, 8);
-      let longAmount = Long.fromNumber(params.buy ? marketAmount : amount);
+      let preciseMarketAmount = parseFloat(marketAmount.toPrecision(8));
+      let longAmount = Long.fromNumber(params.buy ? preciseMarketAmount : amount);
       let change = {
         amount: longAmount.negate(),
         held: longAmount
