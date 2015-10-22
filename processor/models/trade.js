@@ -41,26 +41,22 @@ TradeSchema.methods = {
         // move buyer funds
         (cb) => {
           Currency.balanceFor(pair.currId, this.buyerId, (e, balance) => {
-          // Balance.findOne({userId: this.buyerId, currId: pair.currId}, (e, balance) => {
             balance.change(this, cb);
           });
         },
         (cb) => {
           Currency.balanceFor(pair.marketCurrId, this.buyerId, (e, balance) => {
-          // Balance.findOne({userId: this.buyerId, currId: pair.marketCurrId}, (e, balance) => {
             balance.change(this, cb);
           })
         },
         // move seller funds
         (cb) => {
           Currency.balanceFor(pair.currId, this.sellerId, (e, balance) => {
-          // Balance.findOne({userId: this.sellerId, currId: pair.currId}, (e, balance) => {
             balance.change(this, cb);
           });
         },
         (cb) => {
           Currency.balanceFor(pair.marketCurrId, this.sellerId, (e, balance) => {
-          // Balance.findOne({userId: this.sellerId, currId: pair.marketCurrId}, (e, balance) => {
             balance.change(this, cb);
           });
         }

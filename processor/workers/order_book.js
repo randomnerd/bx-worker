@@ -92,7 +92,6 @@ export default class OrderBookWorker {
       price:  price
     }, (err, item) => {
       if (item) {
-        console.log('found', item);
         OrderBookItem.update({_id: item._id}, {
           $inc: {
             amount: amount,

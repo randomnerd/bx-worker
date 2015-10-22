@@ -55,6 +55,7 @@ OrderSchema.methods = {
   },
 
   processMatch(order, callback) {
+    console.log('processing match', order);
     let tradeAmount = this.remain.greaterThan(order.remain) ? order.remain : this.remain;
     let minPrice = this.price.lessThan(order.price) ? this.price : order.price;
     let maxPrice = this.price.lessThan(order.price) ? order.price : this.price;
@@ -90,7 +91,7 @@ OrderSchema.methods = {
       complete: false,
       canceled: false
     };
-    console.log('looking for matches', params, {
+    let options = {
       sort: {
         // if we're buying, find cheapest matches first (ASC sort on price)
         // otherwise find most expensive matches first
@@ -98,8 +99,10 @@ OrderSchema.methods = {
         // on the same price, process older orders first (DESC sort on created time)
         createdAt: -1
       }
-    });
-    Order.find(params, callback);
+    };
+
+    console.log('looking for matches', params);
+    Order.find(params, options, callback);
   }
 };
 
