@@ -340,7 +340,9 @@ export class WalletWorker extends BaseWorker {
       for (let rawtx of result.details) {
         if (rawtx.category !== 'receive') continue;
 
-        Wallet.findOne({address: rawtx.address}, this._newDeposit);
+        Wallet.findOne({address: rawtx.address}, (e, wallet) => {
+          this._newDeposit(rawtx, wallet, client.confReq);
+        });
       }
     });
   }

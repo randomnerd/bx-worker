@@ -157,4 +157,4 @@ BalanceSchema.methods = {
   }
 };
 
-export const Balance = mongoose.model('Balance', BalanceSchema);
+export let Balance = mongoose.model('Balance', BalanceSchema);
