@@ -27,7 +27,7 @@ export const OrderSchema = new mongoose.Schema({
 
 OrderSchema.statics = {};
 OrderSchema.methods = {
-  process: function() {
+  process: function(callback) {
     this.findMatches((err, matches) => {
       if (err) return logger.error(err);
       if (!matches.length) return logger.info('no matches found');
@@ -36,6 +36,7 @@ OrderSchema.methods = {
         this.processMatch(item, callback);
       }, (err) => {
         logger.info('all matches processed');
+        callback(err);
       })
     })
   },

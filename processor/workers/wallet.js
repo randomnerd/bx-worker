@@ -101,18 +101,22 @@ export class WalletWorker extends BaseWorker {
 
   processOrder(job, callback) {
     try {
-      this._processOrder(job.data.id);
-      job.done();
+      this._processOrder(job.data.id, () => {
+        logger.info(`Processing order ${job.data.id}: finished`);
+        job.done();
+        callback();
+      });
     } catch (e) {
       logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());
-    } finally { callback(); }
+      callback();
+    }
   }
 
-  _processOrder(id) {
+  _processOrder(id, callback) {
     logger.info(`${this.name}: Processing Order ${id}`);
     Order.findOne({_id: id}, (err, order) => {
-      order.process();
+      order.process(callback);
     })
   }
 
