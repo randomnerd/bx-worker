@@ -35,7 +35,7 @@ export default class OrderBookWorker {
   }
 
   stopSubscription() {
-    this.subscription && this.subscription.stop();
+    this.ddp.unsubscribe(this.subscription);
   }
 
   startObserver() {

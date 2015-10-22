@@ -52,7 +52,7 @@ export class BaseWorker {
   }
 
   startObserver() {
-    this.ddp.subscribe(this.config.queueName);
+    this._sub = this.ddp.subscribe(this.config.queueName);
     this.observer = this.ddp.observe(this.config.queueName);
     this.observer.added = (id) => this.triggerQueues();
     this.observer.changed = () => {};
@@ -60,6 +60,7 @@ export class BaseWorker {
   }
 
   stopObserver() {
-    this.observer.stop();
+    this.observer && this.observer.stop();
+    this._sub && this.ddp.unsubscribe(this._sub);
   }
 }

@@ -17,7 +17,7 @@ export class BalanceWorker extends BaseWorker {
   }
 
   startBalanceChangeObserver() {
-    this.ddp.subscribe('balanceChangeQueue');
+    this._bsub = this.ddp.subscribe('balanceChangeQueue');
     this.balanceChangeObserver = this.ddp.observe('balance_changes');
     this.balanceChangeObserver.added = (id) => this.processChange(id);
     this.balanceChangeObserver.changed = () => {};
@@ -25,6 +25,7 @@ export class BalanceWorker extends BaseWorker {
 
   stopBalanceChangeObserver() {
     this.balanceChangeObserver && this.balanceChangeObserver.stop();
+    this._bsub && this.ddp.unsubscribe(this._bsub);
   }
 
   startObserver() {
