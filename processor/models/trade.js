@@ -6,6 +6,7 @@ import Big from 'big.js';
 import {TradePair} from './trade_pair';
 import {Balance} from './balance';
 import {Order} from './order';
+import {Currency} from './currency';
 
 export const TradeSchema = new mongoose.Schema({
   _id:        String,
