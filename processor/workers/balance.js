@@ -141,7 +141,7 @@ export class BalanceWorker extends BaseWorker {
         throw new Error('unknown subject type');
       }
       this.logger.info('Done processing balanceChange', change._id);
-      callback();
+      if (typeof callback === 'function') callback();
     });
   }
 

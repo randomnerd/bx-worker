@@ -17,8 +17,6 @@ export const BalanceSchema = new mongoose.Schema({
   pendingChanges: [String]
 });
 
-BalanceSchema.plugin(findOrCreate);
-
 BalanceSchema.statics = {
   verifyAmount: function(params, callback) {
     let {userId, currId, amount} = params;
@@ -157,4 +155,5 @@ BalanceSchema.methods = {
   }
 };
 
+BalanceSchema.plugin(findOrCreate);
 export let Balance = mongoose.model('Balance', BalanceSchema);
