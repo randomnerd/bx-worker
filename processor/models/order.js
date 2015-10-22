@@ -28,7 +28,8 @@ OrderSchema.statics = {};
 OrderSchema.methods = {
   process: function() {
     this.findMatches((err, matches) => {
-      if (err || !matches.length) { console.log('no matches found'); return; }
+      if (err) { console.log(err) };
+      if (!matches.length) { console.log('no matches found'); return; };
 
       async.mapSeries(matches, (item, callback) => {
         this.processMatch(item, callback);
