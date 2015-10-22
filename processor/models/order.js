@@ -32,9 +32,10 @@ OrderSchema.methods = {
       if (!matches.length) { console.log('no matches found'); return; };
 
       async.mapSeries(matches, (item, callback) => {
+        console.log('processing', item);
         this.processMatch(item, callback);
       }, (err) => {
-
+        console.log('all matches processed');
       })
     })
   },
