@@ -76,10 +76,7 @@ export default class OrderBookWorker {
   }
 
   clearEmpty(pairId) {
-    OrderBookItem.remove({
-      pairId: pairId,
-      amount: Long.fromNumber(0)
-    }, (err) => {});
+    OrderBookItem.remove({amount: Long.fromNumber(0)}, (err) => {});
   }
 
   addAmount(pairId, price, amount, buy) {
@@ -111,7 +108,7 @@ export default class OrderBookWorker {
           marketAmount: marketAmount
         });
         item.save((err) => {
-          this.clearEmpty(pairId);
+          this.clearEmpty();
         });
       }
     });
