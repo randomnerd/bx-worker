@@ -335,7 +335,9 @@ export class WalletWorker extends BaseWorker {
     client.getTransaction(tx.txid, (err, result) => {
       if (err) {
         console.log('Error listing transaction details: ', err);
-        setTimeout(() => { this._processDepositTx(client, tx); }, 3000);
+        return setTimeout(() => {
+          this._processDepositTx(client, tx);
+        }, this.config.updateInterval);
       }
       for (let rawtx of result.details) {
         if (rawtx.category !== 'receive') continue;
