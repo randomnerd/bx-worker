@@ -60,7 +60,7 @@ TradeSchema.methods = {
             balance.change(this, cb);
           });
         }
-      ], (err) => { callback(err); });
+      ], (err, ret) => { console.log(err, ret); callback(err); });
     });
   },
 
