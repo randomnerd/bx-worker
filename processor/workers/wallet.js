@@ -116,6 +116,7 @@ export class WalletWorker extends BaseWorker {
   _processOrder(id, callback) {
     logger.info(`${this.name}: Processing Order ${id}`);
     Order.findOne({_id: id}, (err, order) => {
+      if (err || !order) return logger.error('Order not found', id, err);
       order.process(callback);
     })
   }
