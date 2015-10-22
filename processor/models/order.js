@@ -1,5 +1,6 @@
 import Random from 'meteor-random';
 import mongoose from 'mongoose';
+import _ from 'lodash';
 require('mongoose-long')(mongoose);
 let Long = mongoose.Types.Long;
 
@@ -43,6 +44,7 @@ OrderSchema.methods = {
           remain: {$gt: Long.fromNumber(0)}
         }, (error, order) => {
           if (error || !order) return cb(error || 'didnt match');
+          _.assign(this, order);
           this.processMatch(item, cb);
         });
       }, (err) => {
