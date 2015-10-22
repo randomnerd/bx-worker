@@ -14,19 +14,7 @@
     "wallet": {
       "updateInterval": 10000,
       "queueName": "jobQueue",
-      "currencies": {
-        "LvNRE4MTFTW276sSZ": {
-          "name": "Bitcoin",
-          "confReq": 3,
-          "rpc": {
-            "host": "rpc.blockchain.info",
-            "port": 443,
-            "ssl": true,
-            "user": "591e782b-e94e-4083-b233-1eba64700c3c",
-            "pass": "boo5nu~Ke^y1baik"
-          }
-        }
-      },
+      "currencies": {},
       "balance": {
         "queueName": "balanceQueue"
       }
