@@ -380,12 +380,12 @@ export class WalletWorker extends BaseWorker {
       this.logger.info(`Withdrawal of ${amount} to ${wd.address}`);
 
       // TODO: actually send funds
-      // client.sendToAddress(wd.address, amount, (err, result) => {
-      //   console.log(result);
-      // })
-      wd.txid = '0000000000';
-      wd.state = 'done';
-      wd.save();
+      client.sendToAddress(wd.address, amount, (err, result) => {
+        console.log(result);
+        wd.txid = result;
+        wd.state = 'done';
+        wd.save();
+      });
     });
   }
 
