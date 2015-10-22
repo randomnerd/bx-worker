@@ -103,11 +103,11 @@ BalanceSchema.methods = {
 
 
       if (market) {
-        if (buy)  held.add(trade.marketAmount().negate());
-        if (sell) amount.add(trade.marketAmount());
+        if (buy)  held = held.add(trade.marketAmount().negate());
+        if (sell) amount = amount.add(trade.marketAmount());
       } else {
-        if (buy)  amount.add(trade.amount);
-        if (sell) held.add(trade.amount.negate());
+        if (buy)  amount = amount.add(trade.amount);
+        if (sell) held = held.add(trade.amount.negate());
       }
 
       let str1 = buy ? 'buy' : 'sell';
