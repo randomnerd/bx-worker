@@ -112,7 +112,7 @@ BalanceSchema.methods = {
 
       let str1 = buy ? 'buy' : 'sell';
       let str2 = market ? 'market' : 'currency';
-      console.log(`${str1} ${str2}, amount: ${amount}, held: ${held}`);
+      console.log(`${str1} ${str2}`, amount, held);
 
       Balance.findOneAndUpdate({
         _id: this._id
