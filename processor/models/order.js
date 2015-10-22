@@ -30,7 +30,10 @@ OrderSchema.methods = {
   process: function(callback) {
     this.findMatches((err, matches) => {
       if (err) return logger.error(err);
-      if (!matches.length) return logger.info('no matches found');
+      if (!matches.length) {
+        logger.info('no matches found');
+        return callback();
+      }
 
       async.mapSeries(matches, (item, callback) => {
         this.processMatch(item, callback);
