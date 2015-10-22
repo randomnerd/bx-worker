@@ -12,7 +12,6 @@ export class BaseWorker {
     try {
       this.config = this.processor.config.get('workers.' + this.configName);
     } catch (e) {
-      this.logger.error('No config found for', this.name);
       this.config = {};
     }
   }

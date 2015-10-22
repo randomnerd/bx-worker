@@ -9,6 +9,7 @@ import {Order} from '../models/order';
 import {TradePair} from '../models/trade_pair';
 import {Balance} from '../models/balance';
 import {BalanceChange} from '../models/balance_change';
+import logger from '../logger';
 
 import mongoose from 'mongoose';
 require('mongoose-long')(mongoose);
@@ -22,13 +23,13 @@ export class WalletWorker extends BaseWorker {
   }
 
   startClient(id, config) {
-    this.logger.info('Starting', config.name, 'client');
+    logger.info('Starting', config.name, 'client');
     let client = this.clients[id] = new bitcoin.Client(config.rpc);
     client.currId = id;
     client.currName = config.name;
     client.confReq = config.confReq;
     client.getBalance((err, balance) => {
-      this.logger.info(config.name, 'balance:', balance);
+      logger.info(config.name, 'balance:', balance);
     });
   }
 
@@ -69,23 +70,23 @@ export class WalletWorker extends BaseWorker {
   }
 
   newOrder(job, callback) {
-    this.logger.info('Creating order');
+    logger.info('Creating order');
     try {
       this._newOrder(job.data);
       job.done();
     } catch (e) {
-      this.logger.error('Processing job', job, 'failed:', e.toString());
+      logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());
     } finally { callback(); }
   }
 
   cancelOrder(job, callback) {
-    this.logger.info('Canceling order');
+    logger.info('Canceling order');
     try {
       this._cancelOrder(job.data.id);
       job.done();
     } catch (e) {
-      this.logger.error('Processing job', job, 'failed:', e.toString());
+      logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());
     } finally { callback(); }
   }
@@ -117,7 +118,7 @@ export class WalletWorker extends BaseWorker {
           });
           change.save((changeSaveErr) => {
             if (changeSaveErr) {
-              this.logger.error('Unable to save balancechange');
+              logger.error('Unable to save balancechange');
               throw new Error('Unable to save balancechange');
             };
           });
@@ -128,7 +129,7 @@ export class WalletWorker extends BaseWorker {
 
   _newOrder(params) {
     TradePair.findOne({_id: params.pairId}, (err, pair) => {
-      if (err || !pair) { this.logger.error('Pair not found'); return false; }
+      if (err || !pair) { logger.error('Pair not found'); return false; }
       let currId = params.buy ? pair.marketCurrId : pair.currId;
       let curr = this.config.currencies[currId];
       let amount = parseFloat(params.amount) * Math.pow(10, 8);
@@ -145,12 +146,12 @@ export class WalletWorker extends BaseWorker {
         amount: params.buy ? marketAmount: amount,
       }, (error, balance) => {
         if (error || !balance) {
-          this.logger.error('Unable to verify balance');
+          logger.error('Unable to verify balance');
           throw new Error('Unable to verify balance');
         }
         Balance.findOneAndUpdate({_id: balance._id}, {$inc: change}, {new: true}, (e, newBalance) => {
           if (e || !newBalance) {
-            this.logger.error('Unable to update balance');
+            logger.error('Unable to update balance');
             throw new Error('Unable to update balance');
           }
           let orderId = Random.id();
@@ -166,7 +167,7 @@ export class WalletWorker extends BaseWorker {
           });
           change.save((changeSaveErr) => {
             if (changeSaveErr) {
-              this.logger.error('Unable to save balancechange');
+              logger.error('Unable to save balancechange');
               throw new Error('Unable to save balancechange');
             };
             console.log('saved balancechange');
@@ -186,7 +187,7 @@ export class WalletWorker extends BaseWorker {
             console.log('created order');
             order.save((orderSaveErr) => {
               if (orderSaveErr) {
-                this.logger.error('Unable to save order');
+                logger.error('Unable to save order');
                 throw new Error('Unable to save order');
               }
               console.log('saved order');
@@ -209,13 +210,13 @@ export class WalletWorker extends BaseWorker {
       if (err) {
         job.fail(err.toString());
       } else {
-        this.logger.info('New address for user', userId, '/ currency', currId, '/', address);
+        logger.info('New address for user', userId, '/ currency', currId, '/', address);
 
         let wallet = Wallet.newUserAddress(userId, currId, address, (e) => {
           if (e) {
             job.fail(err.toString());
           } else {
-            this.logger.info('Address saved with id', wallet.id);
+            logger.info('Address saved with id', wallet.id);
             job.done();
           }
         });
@@ -232,12 +233,12 @@ export class WalletWorker extends BaseWorker {
       return callback();
     }
 
-    this.logger.info('Updating deposit confirmations for', curr.name);
+    logger.info('Updating deposit confirmations for', curr.name);
     try {
       this._updateDepositConfirmations(job.data.currId);
       job.done();
     } catch (e) {
-      this.logger.error('Processing job', job, 'failed:', e.toString());
+      logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());
     } finally { callback(); }
   }
@@ -275,12 +276,12 @@ export class WalletWorker extends BaseWorker {
       return callback();
     }
 
-    this.logger.info('Processing deposits for', curr.name);
+    logger.info('Processing deposits for', curr.name);
     try {
       this._processDeposits(job.data.currId);
       job.done();
     } catch (e) {
-      this.logger.error('Processing job', job, 'failed:', e.toString());
+      logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());
     } finally { callback(); }
   }
@@ -289,7 +290,10 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[id];
 
     client.listTransactions(null, batch, skip, (err, result) => {
-      if (err) {console.log(err); throw new Error('Error listing transactions: ' + err); }
+      if (err) {
+        logger.error(err);
+        throw new Error('Error listing transactions: ' + err);
+      }
       if (!result.transactions || result.transactions.length === 0) return;
 
       let txids = _.uniq(_.pluck(result.transactions, 'txid'));
@@ -334,7 +338,10 @@ export class WalletWorker extends BaseWorker {
   _processDepositTx(client, tx) {
     client.getTransaction(tx.txid, (err, result) => {
       if (err) {
-        console.log('Error listing transaction details: ', err);
+        if (err.code != -32602) {
+          // dont log too fast requests error
+          logger.error('Error listing transaction details:\n', err);
+        }
         return setTimeout(() => {
           this._processDepositTx(client, tx);
         }, this.config.updateInterval);
@@ -362,14 +369,14 @@ export class WalletWorker extends BaseWorker {
       return callback();
     }
 
-    this.logger.info('Withdrawal', job.data.wdId);
+    logger.info('Withdrawal', job.data.wdId);
     try {
       Withdrawal.findOne({_id: job.data.wdId, state: 'applied'}, (err, wd) => {
         this._processWithdrawal(curr, client, wd);
       });
       job.done();
     } catch (e) {
-      this.logger.error('Processing job', job, 'failed:', e.toString());
+      logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());
     } finally { callback(); }
   }
@@ -381,7 +388,7 @@ export class WalletWorker extends BaseWorker {
       console.log(err, bc);
       if (err) throw err;
       let amount = wd.amount / Math.pow(10, 8);
-      this.logger.info(`Withdrawal of ${amount} to ${wd.address}`);
+      logger.info(`Withdrawal of ${amount} to ${wd.address}`);
 
       // TODO: actually send funds
       client.sendToAddress(wd.address, amount, (err, result) => {

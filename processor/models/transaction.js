@@ -4,6 +4,8 @@ import {Currency} from './currency';
 import {Long} from './balance';
 import {Notification} from './notification';
 import Big from 'big.js';
+import logger from '../logger';
+
 export const TransactionSchema = new mongoose.Schema({
   _id:             String,
   userId:          String,
@@ -62,7 +64,11 @@ TransactionSchema.methods = {
 
   updateConfirmations: function(client) {
     client.getTransaction(this.txid, (err, txdata) => {
-      if (err) {console.log(err); throw new Error('Error listing transaction details: ' + err); }
+      if (err) {
+        let msg = 'Error listing transaction details';
+        logger.error(msg, err);
+        throw new Error(msg, err);
+      }
       if (txdata.confirmations === this.confirmations) return;
 
       this.confirmations = txdata.confirmations;

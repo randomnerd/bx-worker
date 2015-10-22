@@ -26,7 +26,7 @@ export default class OrderBookWorker {
 
   resetOrders() {
     OrderBookItem.remove({}, (err, ret) => {
-      console.log('reset orders', err);
+      if (err) this.logger.error('Error resetting orderbook:', err);
     });
   }
 

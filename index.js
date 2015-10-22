@@ -1,12 +1,8 @@
 import DDP from 'ddp';
 import ddpLogin from 'ddp-login';
 import config from 'config';
-import winston from 'winston';
+import logger from './processor/logger';
 import {Processor} from './processor';
-
-winston.cli();
-winston.remove(winston.transports.Console);
-winston.add(winston.transports.Console, {'timestamp': true, 'colorize': true});
 
 let meteorConfig = config.get('meteorConfig');
 
@@ -25,15 +21,22 @@ let ddpAuth = {
   pass:    meteorConfig.pass
 };
 
-let proc = new Processor(ddp, config, winston);
+let proc = new Processor(ddp, config, logger);
 
 ddp.connect(function(err, wasReconnect) {
-  if (err) { winston.error('DDP connection error:', err); return; }
-  wasReconnect ? winston.info('DDP Reconnected') : winston.info('DDP Connected');
+  if (err) {
+    logger.error('DDP connection error:', err);
+    return;
+  }
+  wasReconnect ? logger.info('DDP Reconnected') : logger.info('DDP Connected');
 
   ddpLogin(ddp, ddpAuth, function(e) {
-    if (err) { winston.error('DDP Auth error:', e); throw e; }
-    winston.info('DDP Authenticated');
+    if (e) {
+      logger.error('DDP Auth error:', e);
+      throw e;
+    }
+
+    logger.info('DDP Authenticated');
 
     proc.start();
   });
@@ -41,7 +44,7 @@ ddp.connect(function(err, wasReconnect) {
 
 ddp.on('socket-close', () => { //(code, message)
   if (proc.isRunning) {
-    winston.error('DDP Socket closed, stopping workers...');
+    logger.error('DDP Socket closed, stopping workers...');
     proc.stop();
   }
 });
