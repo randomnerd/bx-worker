@@ -92,6 +92,7 @@ export class WalletWorker extends BaseWorker {
 
   _cancelOrder(id) {
     Order.findOneAndUpdate({_id: id, canceled: false}, {$set: {canceled: true}}, {new: true}, (err, order) => {
+      if (!order) return;
       TradePair.findOne({_id: order.pairId}, (pairErr, pair) => {
         let currId = order.buy ? pair.marketCurrId : pair.currId;
         let amount = order.buy ? order.marketRemain() : order.remain;

@@ -65,9 +65,9 @@ export default class OrderBookWorker {
 
   orderRemoved(id, oldValue) {
     console.log('orderRemoved', id, oldValue);
-    let remain = Long.fromNumber(oldValue.remain);
+    let amount = Long.fromNumber(oldValue.amount);
     let price = Long.fromNumber(oldValue.price);
-    this.addAmount(oldValue.pairId, price, remain.negate(), oldValue.buy);
+    this.addAmount(oldValue.pairId, price, amount.negate(), oldValue.buy);
   }
 
   marketAmount(price, amount) {

@@ -13,8 +13,7 @@ export const OrderBookItemSchema = new mongoose.Schema({
   amount:       mongoose.Types.Long,
   marketAmount: mongoose.Types.Long,
   price:        mongoose.Types.Long,
-  buy:          Boolean,
-  lastModified: Date
+  buy:          Boolean
 });
 
 OrderBookItemSchema.statics = {};
