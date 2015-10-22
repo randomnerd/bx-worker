@@ -35,8 +35,16 @@ OrderSchema.methods = {
         return callback();
       }
 
-      async.mapSeries(matches, (item, callback) => {
-        this.processMatch(item, callback);
+      async.mapSeries(matches, (item, cb) => {
+        Order.findOne({
+          _id: this._id,
+          canceled: false,
+          complete: false,
+          remain: {$gt: Long.fromNumber(0)}
+        }, (error, order) => {
+          if (error || !order) return cb(error || 'didnt match');
+          this.processMatch(item, cb);
+        });
       }, (err) => {
         logger.info('all matches processed');
         callback(err);

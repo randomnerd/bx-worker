@@ -56,11 +56,14 @@ export default class OrderBookWorker {
   }
 
   orderChanged(id, oldFields, clearedFields, newFields) {
-    let oldRemain = Long.fromNumber(oldFields.remain);
-    let price = Long.fromNumber(oldFields.price);
-    let newRemain = Long.fromNumber(newFields.remain);
-    let change = newRemain.subtract(oldRemain);
-    this.addAmount(oldFields.pairId, price, change, oldFields.buy);
+    if (!oldFields.remain || newFields.remain === 0) return;
+    Order.findOne({_id: id}, (err, order) => {
+      let oldRemain = Long.fromNumber(oldFields.remain);
+      let newRemain = Long.fromNumber(newFields.remain);
+      let change = newRemain.subtract(oldRemain);
+      let price = Long.fromNumber(order.price);
+      this.addAmount(order.pairId, price, change, order.buy);
+    });
   }
 
   orderRemoved(id, oldValue) {
@@ -75,7 +78,7 @@ export default class OrderBookWorker {
   }
 
   clearEmpty(pairId) {
-    OrderBookItem.remove({amount: Long.fromNumber(0)}, (err) => {});
+    OrderBookItem.remove({amount: {$lte: Long.fromNumber(0)}}, (err) => {});
   }
 
   addAmount(pairId, price, amount, buy) {
@@ -88,6 +91,7 @@ export default class OrderBookWorker {
       price:  price
     }, (err, item) => {
       if (item) {
+        if (item.amount.lessThanOrEqual(Long.fromNumber(0))) return this.clearEmpty();
         OrderBookItem.update({_id: item._id}, {
           $inc: {
             amount: amount,
