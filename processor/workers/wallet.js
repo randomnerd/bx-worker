@@ -75,7 +75,7 @@ export class WalletWorker extends BaseWorker {
 
   stopOrderObserver() {
     this.orderObserver && this.orderObserver.stop();
-    this._wsub && this.unsubscribe(this._wsub);
+    this._wsub && this.ddp.unsubscribe(this._wsub);
   }
 
   getJobMap() {
