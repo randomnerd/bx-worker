@@ -63,7 +63,7 @@ export class WalletWorker extends BaseWorker {
   }
 
   startOrderObserver() {
-    this.ddp.subscribe('orderQueue');
+    this._wsub = this.ddp.subscribe('orderQueue');
     this.orderObserver = this.ddp.observe('orders');
     this.orderObserver.added = (id) => {
       let job = new Job('jobQueue', 'processOrder', {id: id});
@@ -75,6 +75,7 @@ export class WalletWorker extends BaseWorker {
 
   stopOrderObserver() {
     this.orderObserver && this.orderObserver.stop();
+    this._wsub && this.unsubscribe(this._wsub);
   }
 
   getJobMap() {
