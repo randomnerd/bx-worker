@@ -1,5 +1,4 @@
 import Random from 'meteor-random';
-import bitcoin from 'bitcoin';
 import Job from 'meteor-job';
 import {BaseWorker} from './base';
 import _ from 'underscore';
@@ -10,6 +9,7 @@ import {Order} from '../models/order';
 import {TradePair} from '../models/trade_pair';
 import {Balance} from '../models/balance';
 import {BalanceChange} from '../models/balance_change';
+import CryptoClient from '../models/crypto_client';
 import logger from '../logger';
 
 import mongoose from 'mongoose';
@@ -25,10 +25,7 @@ export class WalletWorker extends BaseWorker {
 
   startClient(id, config) {
     logger.info('Starting', config.name, 'client');
-    let client = this.clients[id] = new bitcoin.Client(config.rpc);
-    client.currId = id;
-    client.currName = config.name;
-    client.confReq = config.confReq;
+    let client = this.clients[id] = new CryptoClient(id, config);
     client.getBalance((err, balance) => {
       logger.info(config.name, 'balance:', balance);
     });
