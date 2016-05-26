@@ -28,6 +28,7 @@
     "mongoose": "^4.1.2",
     "mongoose-findorcreate": "^0.1.2",
     "mongoose-long": "0.0.2",
+    "node-ethereumjs-keystore": "^1.0.2",
     "underscore": "^1.8.3",
     "web3": "^0.16.0",
     "winston": "^1.0.1"

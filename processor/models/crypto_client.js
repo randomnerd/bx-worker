@@ -1,13 +1,15 @@
 import Web3 from 'web3';
 import Bitcoin from 'bitcoin';
+import KeyStore from 'node-ethereumjs-keystore';
 
 export default class CryptoClient {
   constructor(id, config) {
     this.currId   = id;
     this.config   = config;
+    this.type     = config.type;
     this.confReq  = config.confReq;
     this.currName = config.name;
-    this.type     = config.type;
+    this.ethKeyStore = new KeyStore();
     this.initClient();
   }
 
@@ -37,7 +39,8 @@ export default class CryptoClient {
   getNewAddress(callback) {
     switch (this.type) {
       case 'eth':
-        // stub
+        let key = this.ethKeyStore.newAccount();
+        callback(null, key);
         break;
       default:
         this._client.getNewAddress(callback);
@@ -46,7 +49,6 @@ export default class CryptoClient {
   }
 
   listTransactions(numConf, batch, skip, callback) {
-    // stub
     switch (this.type) {
       case 'eth':
         // stub
@@ -60,7 +62,8 @@ export default class CryptoClient {
   sendToAddress(address, amount, callback) {
     switch (this.type) {
       case 'eth':
-        // stub
+        let txid = this._client.eth.sendTransaction({to: address, value: amount});
+        txid ? callback(null, txid) : callback(new Error('unable to send transaction'));
         break;
       default:
         this._client.sendToAddress(address, amount, callback);
@@ -71,7 +74,7 @@ export default class CryptoClient {
   getTransaction(txid, callback) {
     switch (this.type) {
       case 'eth':
-        // stub
+        callback(null, this._client.eth.getTransactionByHash(txid));
         break;
       default:
         this._client.getTransaction(txid, callback);
