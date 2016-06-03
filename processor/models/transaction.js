@@ -64,7 +64,7 @@ TransactionSchema.methods = {
 
   updateConfirmations: function(client) {
     client.getTransaction(this.txid, (err, txdata) => {
-      if (err) return logger.error(msg, err);
+      if (err) return logger.error(err);
       if (txdata.confirmations === this.confirmations) return;
 
       this.confirmations = txdata.confirmations;

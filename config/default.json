@@ -1,13 +1,13 @@
 {
   "meteorConfig": {
-    "host": "localhost",
-    "port": 3000,
+    "host": "dstock.io",
+    "port": 80,
     "user": "admin@example.com",
     "pass": "123qwe"
   },
   "mongoConfig": {
     "host": "localhost",
-    "port": "3001",
+    "port": "27017",
     "dbName": "meteor"
   },
   "workers": {
