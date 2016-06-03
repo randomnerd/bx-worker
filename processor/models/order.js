@@ -29,6 +29,7 @@ export const OrderSchema = new mongoose.Schema({
 OrderSchema.statics = {};
 OrderSchema.methods = {
   process: function(callback) {
+    if (!this.price) return callback(new Error('zero-priced order!'));
     this.findMatches((err, matches) => {
       if (err) return logger.error(err);
       if (!matches.length) {
@@ -71,6 +72,7 @@ OrderSchema.methods = {
   },
 
   processMatch(order, callback) {
+    if (!this.price || !order.price) return callback(new Error('zero-priced order!'));
     logger.info('processing match', order._doc);
     let tradeAmount = this.remain.greaterThan(order.remain) ? order.remain : this.remain;
     let minPrice = this.price.lessThan(order.price) ? this.price : order.price;
