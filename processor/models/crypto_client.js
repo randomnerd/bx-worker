@@ -10,7 +10,25 @@ export default class CryptoClient {
     this.confReq  = config.confReq;
     this.currName = config.name;
     this.ethKeyStore = new KeyStore();
+    this.ethFilter = null;
+    this.lastBlock = 0;
     this.initClient();
+  }
+
+  ethWatcher(error, log) {
+    if (error) return console.log(error);
+    let block = this._client.eth.getBlock(log, true);
+    if (!block) return;
+    let {transactions} = block;
+    if (!transactions || transactions.length === 0) return;
+    for (let tx of transactions) {
+      let {blockNumber, hash, from, to, value} = tx;
+      if (!value) continue;
+      // check if address is in database
+      // check confirmation requirements
+      // add to balance
+    }
+    if (this.lastBlock < blockNumber) this.lastBlock = blockNumber;
   }
 
   initClient() {
@@ -18,6 +36,8 @@ export default class CryptoClient {
       case 'eth':
         let web3 = this._client = new Web3();
         web3.setProvider(new web3.providers.HttpProvider(this.config.rpc));
+        this.ethFilter = web3.eth.filter('latest');
+        this.ethFilter.watch(this.ethWatcher);
         break;
       default:
         this._client = new Bitcoin.Client(this.config.rpc);
