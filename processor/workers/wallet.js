@@ -228,13 +228,13 @@ export class WalletWorker extends BaseWorker {
       job.fail('No client configured for currency ' + currId);
       return callback();
     }
-    client.getNewAddress((err, address) => {
+    client.getNewAddress((err, address, secret) => {
       if (err) {
         job.fail(err.toString());
       } else {
         logger.info('New address for user', userId, '/ currency', currId, '/', address);
 
-        let wallet = Wallet.newUserAddress(userId, currId, address, (e) => {
+        let wallet = Wallet.newUserAddress(userId, currId, address, secret, (e) => {
           if (e) {
             job.fail(err.toString());
           } else {

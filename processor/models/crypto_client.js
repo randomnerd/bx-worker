@@ -28,16 +28,17 @@ export default class CryptoClient {
       // check confirmation requirements
       // add to balance
     }
-    if (this.lastBlock < blockNumber) this.lastBlock = blockNumber;
+    if (this.lastBlock < block.number) this.lastBlock = block.number;
   }
 
   initClient() {
     switch (this.type) {
       case 'eth':
         let web3 = this._client = new Web3();
-        web3.setProvider(new web3.providers.HttpProvider(this.config.rpc));
+        let url = `http://${this.config.rpc.host}:${this.config.rpc.port}`;
+        web3.setProvider(new web3.providers.HttpProvider(url));
         this.ethFilter = web3.eth.filter('latest');
-        this.ethFilter.watch(this.ethWatcher);
+        this.ethFilter.watch(this.ethWatcher.bind(this));
         break;
       default:
         this._client = new Bitcoin.Client(this.config.rpc);
@@ -48,7 +49,7 @@ export default class CryptoClient {
   getBalance(callback) {
     switch (this.type) {
       case 'eth':
-        callback(null, this._client.eth.getBalance(this._client.eth.coinbase));
+        callback(null, this._client.eth.getBalance(this._client.eth.coinbase).toNumber());
         break;
       default:
         this._client.getBalance(callback);
@@ -60,7 +61,7 @@ export default class CryptoClient {
     switch (this.type) {
       case 'eth':
         let key = this.ethKeyStore.newAccount();
-        callback(null, key);
+        callback(null, key.address, key.secretKey.toString('hex'));
         break;
       default:
         this._client.getNewAddress(callback);
