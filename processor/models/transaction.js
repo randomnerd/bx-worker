@@ -13,6 +13,7 @@ export const TransactionSchema = new mongoose.Schema({
   walletId:        String,
   balanceChangeId: String,
   address:         String,
+  blockNumber:     Number,
   txid:            String,
   confirmations:   Number,
   amount:          mongoose.Schema.Types.Long,
@@ -24,22 +25,33 @@ export const TransactionSchema = new mongoose.Schema({
 TransactionSchema.statics = {
   newDeposit: function(tx, wallet, confReq) {
     // save deposit
-
+    let amount = tx.amount || tx.value;
+    if (amount.s) {
+      amount = new Long(tx.value.div(Math.pow(10, 10)).toNumber());
+    } else {
+      amount = new Long(tx.amount * Math.pow(10, 8));
+    }
     let newTx = new Transaction({
       _id:             Random.id(),
       userId:          wallet.userId,
       currId:          wallet.currId,
       walletId:        wallet._id,
       balanceChangeId: null,
-      txid:            tx.txid,
-      address:         tx.address,
-      confirmations:   Math.abs(tx.confirmations),
-      amount:          new Long(tx.amount * Math.pow(10, 8)),
+      blockNumber:     tx.blockNumber || 0,
+      txid:            tx.txid || tx.hash,
+      address:         tx.address || tx.to,
+      confirmations:   Math.abs(tx.confirmations || 1),
+      amount:          amount,
       createdAt:       new Date,
       updatedAt:       null
     });
+    console.log('newDeposit', tx);
+    console.log(newTx);
     newTx.save((err) => {
-      if (err) return logger.error(err);
+      if (err) {
+        logger.error(err.errors);
+        return logger.error(err);
+      }
       newTx.notifyUser();
       if (newTx.confirmations >= confReq) newTx.matureDeposit();
     });
@@ -63,16 +75,26 @@ TransactionSchema.methods = {
   },
 
   updateConfirmations: function(client) {
-    client.getTransaction(this.txid, (err, txdata) => {
-      if (err) return logger.error(err);
-      if (txdata.confirmations === this.confirmations) return;
+    if (client._client.eth) {
+      let numConf = client._client.eth.blockNumber - this.blockNumber;
+      if (numConf != this.confirmations) {
+        this.confirmations = numConf;
+        this.updatedAt = new Date;
+        this.save();
+      }
+    } else {
+      client.getTransaction(this.txid, (err, txdata) => {
+        if (err) return logger.error(err);
+        console.log('updateConfirmations', txdata);
+        if (txdata.confirmations === this.confirmations || !txdata.confirmations) return;
 
-      this.confirmations = txdata.confirmations;
-      this.updatedAt = new Date;
-      this.save();
+        this.confirmations = txdata.confirmations;
+        this.updatedAt = new Date;
+        this.save();
+      });
+    }
 
-      if (this.confirmations >= client.confReq) this.matureDeposit();
-    });
+    if (this.confirmations >= client.confReq) this.matureDeposit();
   },
 
   matureDeposit: function() {

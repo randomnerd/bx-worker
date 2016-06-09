@@ -1,6 +1,12 @@
 import Web3 from 'web3';
 import Bitcoin from 'bitcoin';
 import KeyStore from 'node-ethereumjs-keystore';
+import {Wallet} from './wallet';
+import {Transaction} from './transaction';
+import {Withdrawal} from './withdrawal';
+import {Balance} from './balance';
+import {BalanceChange} from './balance_change';
+import logger from '../logger';
 
 export default class CryptoClient {
   constructor(id, config) {
@@ -9,9 +15,11 @@ export default class CryptoClient {
     this.type     = config.type;
     this.confReq  = config.confReq;
     this.currName = config.name;
-    this.ethKeyStore = new KeyStore();
-    this.ethFilter = null;
-    this.lastBlock = 0;
+    if (this.type === 'eth') {
+      this.ethKeyStore = new KeyStore();
+      this.ethFilter = null;
+      this.lastBlock = 0;
+    }
     this.initClient();
   }
 
@@ -23,10 +31,18 @@ export default class CryptoClient {
     if (!transactions || transactions.length === 0) return;
     for (let tx of transactions) {
       let {blockNumber, hash, from, to, value} = tx;
-      if (!value) continue;
-      // check if address is in database
-      // check confirmation requirements
-      // add to balance
+      if (value.toNumber() === 0) continue;
+      // console.log('tx', hash, to, value.toNumber() / Math.pow(10, 18));
+      Transaction.findOne({
+        txid: hash
+      }).then((found) => {
+        if (found) return console.log(txError, found);
+        return Wallet.findOne({address: to});
+      }).then((wallet) => {
+        if (!wallet) return false;//console.log('wallet not found', to);
+        logger.info(`Incoming tx to ${to}: ${value.toNumber() / Math.pow(10, 18)} (${hash})`)
+        Transaction.newDeposit(tx, wallet, this.confReq);
+      });
     }
     if (this.lastBlock < block.number) this.lastBlock = block.number;
   }
@@ -61,7 +77,7 @@ export default class CryptoClient {
     switch (this.type) {
       case 'eth':
         let key = this.ethKeyStore.newAccount();
-        callback(null, key.address, key.secretKey.toString('hex'));
+        callback(null, "0x" + key.address, key.secretKey.toString('hex'));
         break;
       default:
         this._client.getNewAddress(callback);
@@ -95,7 +111,7 @@ export default class CryptoClient {
   getTransaction(txid, callback) {
     switch (this.type) {
       case 'eth':
-        callback(null, this._client.eth.getTransactionByHash(txid));
+        callback(null, this._client.eth.getTransaction(txid));
         break;
       default:
         this._client.getTransaction(txid, callback);
