@@ -51,7 +51,7 @@ export default class OrderBookWorker {
 
   orderAdded(id) {
     Order.findOne({_id: id}, (err, order) => {
-      logger.info('order added', order);
+      logger.info('order added', order._doc);
       this.addAmount(order.pairId, order.price, order.remain, order.buy);
     });
   }
