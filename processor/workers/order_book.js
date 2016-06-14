@@ -56,7 +56,8 @@ export default class OrderBookWorker {
   }
 
   orderChanged(id, oldFields, clearedFields, newFields) {
-    if (!oldFields.remain || newFields.remain === 0) return;
+    logger.info('order changed', oldFields, newFields);
+    if (oldFields.remain == Long.fromNumber(0) || newFields.remain == Long.fromNumber(0)) return;
     Order.findOne({_id: id}, (err, order) => {
       let oldRemain = Long.fromNumber(oldFields.remain);
       let newRemain = Long.fromNumber(newFields.remain);
