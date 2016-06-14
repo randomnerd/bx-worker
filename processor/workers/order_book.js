@@ -51,6 +51,7 @@ export default class OrderBookWorker {
 
   orderAdded(id) {
     Order.findOne({_id: id}, (err, order) => {
+      logger.info('order added', order);
       this.addAmount(order.pairId, order.price, order.remain, order.buy);
     });
   }
@@ -68,6 +69,7 @@ export default class OrderBookWorker {
   }
 
   orderRemoved(id, oldValue) {
+    logger.info('order removed', oldValue);
     let amount = Long.fromNumber(oldValue.amount);
     let price = Long.fromNumber(oldValue.price);
     this.addAmount(oldValue.pairId, price, amount.negate(), oldValue.buy);
