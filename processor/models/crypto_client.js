@@ -6,6 +6,7 @@ import {Transaction} from './transaction';
 import {Withdrawal} from './withdrawal';
 import {Balance} from './balance';
 import {BalanceChange} from './balance_change';
+import {Setting} from './setting';
 import logger from '../logger';
 
 export default class CryptoClient {
@@ -18,7 +19,9 @@ export default class CryptoClient {
     if (this.type === 'eth') {
       this.ethKeyStore = new KeyStore();
       this.ethFilter = null;
-      this.lastBlock = 0;
+      Setting.get('ethLastBlock').then((ethLastBlock) => {
+        this.lastBlock = ethLastBlock ? ethLastBlock.value : 0;
+      });
     }
     this.initClient();
   }
@@ -43,7 +46,10 @@ export default class CryptoClient {
         Transaction.newDeposit(tx, wallet, this.confReq);
       });
     }
-    if (this.lastBlock < block.number) this.lastBlock = block.number;
+    if (this.lastBlock < block.number) {
+      this.lastBlock = block.number;
+      Setting.set('ethLastBlock', block.number);
+    }
   }
 
   initClient() {
