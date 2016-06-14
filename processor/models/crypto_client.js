@@ -24,7 +24,7 @@ export default class CryptoClient {
   }
 
   ethWatcher(error, log) {
-    if (error) return console.log(error);
+    if (error) return logger.error(error);
     let block = this._client.eth.getBlock(log, true);
     if (!block) return;
     let {transactions} = block;
@@ -32,14 +32,13 @@ export default class CryptoClient {
     for (let tx of transactions) {
       let {blockNumber, hash, from, to, value} = tx;
       if (value.toNumber() === 0) continue;
-      // console.log('tx', hash, to, value.toNumber() / Math.pow(10, 18));
       Transaction.findOne({
         txid: hash
       }).then((found) => {
-        if (found) return console.log(txError, found);
+        if (found) return logger.error('tx already in db', txError, found);
         return Wallet.findOne({address: to});
       }).then((wallet) => {
-        if (!wallet) return false;//console.log('wallet not found', to);
+        if (!wallet) return false;
         logger.info(`Incoming tx to ${to}: ${value.toNumber() / Math.pow(10, 18)} (${hash})`)
         Transaction.newDeposit(tx, wallet, this.confReq);
       });

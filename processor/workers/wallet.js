@@ -272,7 +272,6 @@ export class WalletWorker extends BaseWorker {
       confirmations: { $lt: client.confReq },
       balanceChangeId: null
     }, (err, txs) => {
-      console.log(txs);
       for (let tx of txs) {
         tx.updateConfirmations(client);
       }

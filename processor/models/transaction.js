@@ -45,8 +45,6 @@ TransactionSchema.statics = {
       createdAt:       new Date,
       updatedAt:       null
     });
-    console.log('newDeposit', tx);
-    console.log(newTx);
     newTx.save((err) => {
       if (err) {
         logger.error(err.errors);
@@ -85,7 +83,6 @@ TransactionSchema.methods = {
     } else {
       client.getTransaction(this.txid, (err, txdata) => {
         if (err) return logger.error(err);
-        console.log('updateConfirmations', txdata);
         if (txdata.confirmations === this.confirmations || !txdata.confirmations) return;
 
         this.confirmations = txdata.confirmations;
