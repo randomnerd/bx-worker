@@ -93,8 +93,8 @@ BalanceSchema.methods = {
 
   changeWithTrade(trade, callback) {
     let longZero = Long.fromNumber(0);
-    let amount   = longZero;
-    let held     = longZero;
+    let amount   = Long.fromNumber(0);
+    let held     = Long.fromNumber(0);
 
     TradePair.findOne({_id: trade.pairId}, (err, pair) => {
       let buy    = this.userId === trade.buyerId;
@@ -108,6 +108,8 @@ BalanceSchema.methods = {
         if (buy)  amount = amount.add(trade.amount);
         if (sell) held = held.add(trade.amount.negate());
       }
+
+      logger.info(`changeWithTrade | currId: ${this.currId}, buy: ${buy}, sell: ${sell}, market: ${market}, amount: ${amount.toString()}, held: ${held.toString()}`);
 
       Balance.findOneAndUpdate({
         _id: this._id
