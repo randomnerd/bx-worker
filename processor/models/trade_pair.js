@@ -8,7 +8,7 @@ export const TradePairSchema = new mongoose.Schema({
   buyFee:       Number,
   sellFee:      Number,
   dayVolume:    mongoose.Schema.Types.Long,
-  lastPrice:    mongoose.Schema.Types.Long,
+  lastPrice:    Number,
   lastTrade:    Date
 });
 

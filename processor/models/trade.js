@@ -106,14 +106,13 @@ TradeSchema.methods = {
   updateStats: function(callback) {
     TradePair.update({_id: this.pairId}, {
       $set: {
-        lastPrice: this.price,
+        lastPrice: this.price.toNumber(),
         lastTrade: this.createdAt
       },
       $inc: {
         dayVolume: this.amount
       }
     }, callback);
-    // callback(null);
   },
 
   updateChart: function(callback) {
