@@ -59,6 +59,13 @@ export default class CryptoClient {
         let url = `http://${this.config.rpc.host}:${this.config.rpc.port}`;
         web3.setProvider(new web3.providers.HttpProvider(url));
         this.ethFilter = web3.eth.filter('latest');
+        if (this.lastBlock < web3.eth.blockNumber) {
+          logger.info('last processed block is too old, catching up');
+          for (let blockNumber = this.lastBlock; blockNumber < web3.eth.blockNumber; blockNumber++) {
+            logger.info(`processing block ${blockNumber} of ${web3.eth.blockNumber}`);
+            this.ethWatcher(null, blockNumber);
+          }
+        }
         this.ethFilter.watch(this.ethWatcher.bind(this));
         break;
       default:
