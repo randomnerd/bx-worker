@@ -168,10 +168,10 @@ export class WalletWorker extends BaseWorker {
       if (err || !pair) { logger.error('Pair not found'); return false; }
       let currId = params.buy ? pair.marketCurrId : pair.currId;
       let curr = this.config.currencies[currId];
-      let amount = parseFloat(params.amount) * Math.pow(10, 8);
-      let price = parseFloat(params.price) * Math.pow(10, 8);
-      let marketAmount = parseFloat(params.amount) * parseFloat(params.price) * Math.pow(10, 8);
-      let preciseMarketAmount = parseFloat(marketAmount.toPrecision(8));
+      let amount = Math.round(parseFloat(params.amount) * Math.pow(10, 8));
+      let price = Math.round(parseFloat(params.price) * Math.pow(10, 8));
+      let marketAmount = Math.round(parseFloat(params.amount) * parseFloat(params.price) * Math.pow(10, 8));
+      let preciseMarketAmount = Math.round(parseFloat(marketAmount.toPrecision(8)));
       let longAmount = Long.fromNumber(params.buy ? preciseMarketAmount : amount);
       let change = {
         amount: longAmount.negate(),

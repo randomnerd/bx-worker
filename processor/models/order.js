@@ -56,19 +56,11 @@ OrderSchema.methods = {
   },
 
   marketAmount: function() {
-    // FIXME: crazy shit here
-    let bigAmount = Big((this.amount.toNumber()/Math.pow(10,8)).toString());
-    let bigPrice  = Big((this.price.toNumber()/Math.pow(10,8)).toString());
-    let bigMarketAmount = bigAmount.mul(bigPrice).mul(Big(Math.pow(10, 8)));
-    return Long.fromString(bigMarketAmount.toString());
+    return this.amount.multiply(this.price).div(new Long(Math.pow(10,8)));
   },
 
   marketRemain: function() {
-    // FIXME: crazy shit here
-    let bigRemain = Big((this.remain.toNumber()/Math.pow(10,8)).toString());
-    let bigPrice  = Big((this.price.toNumber()/Math.pow(10,8)).toString());
-    let bigMarketRemian = bigRemain.mul(bigPrice).mul(Big(Math.pow(10, 8)));
-    return Long.fromString(bigMarketRemian.toString());
+    return this.remain.multiply(this.price).div(new Long(Math.pow(10,8)));
   },
 
   processMatch(order, callback) {
