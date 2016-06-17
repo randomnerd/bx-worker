@@ -74,7 +74,7 @@ TransactionSchema.methods = {
 
   updateConfirmations: function(client) {
     if (client._client.eth) {
-      let numConf = client._client.eth.blockNumber - this.blockNumber;
+      let numConf = client._client.eth.blockNumber - this.blockNumber + 1;
       if (numConf != this.confirmations) {
         this.confirmations = numConf;
         this.updatedAt = new Date;
