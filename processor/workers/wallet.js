@@ -236,7 +236,7 @@ export class WalletWorker extends BaseWorker {
 
         let wallet = Wallet.newUserAddress(userId, currId, address, secret, (e) => {
           if (e) {
-            job.fail(err.toString());
+            job.fail(e.toString());
           } else {
             logger.info('Address saved with id', wallet.id);
             job.done();
