@@ -8,7 +8,8 @@ export const CurrencySchema = new mongoose.Schema({
   shortName:     String,
   name:          String,
   status:        String,
-  withdrawalFee: String
+  withdrawalFee: String,
+  confReq:       Number
 });
 
 let longZero = Long.fromNumber(0);
