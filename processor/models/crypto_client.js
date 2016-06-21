@@ -19,9 +19,6 @@ export default class CryptoClient {
     if (this.type === 'eth') {
       this.ethKeyStore = new KeyStore();
       this.ethFilter = null;
-      Setting.get('ethLastBlock').then((ethLastBlock) => {
-        this.lastBlock = ethLastBlock ? ethLastBlock.value : 0;
-      });
     }
     this.initClient();
   }
@@ -59,14 +56,18 @@ export default class CryptoClient {
         let url = `http://${this.config.rpc.host}:${this.config.rpc.port}`;
         web3.setProvider(new web3.providers.HttpProvider(url));
         this.ethFilter = web3.eth.filter('latest');
-        if (this.lastBlock < web3.eth.blockNumber) {
-          logger.info('last processed block is too old, catching up');
-          for (let blockNumber = this.lastBlock; blockNumber < web3.eth.blockNumber; blockNumber++) {
-            logger.info(`processing block ${blockNumber} of ${web3.eth.blockNumber}`);
-            this.ethWatcher(null, blockNumber);
+        Setting.get('ethLastBlock').then((ethLastBlock) => {
+          this.lastBlock = ethLastBlock ? ethLastBlock.value : 0;
+          logger.info(`Last processed eth block: ${this.lastBlock}, latest ethereum block: ${web3.eth.blockNumber}`);
+          if (this.lastBlock < web3.eth.blockNumber) {
+            logger.info('last processed block is too old, catching up');
+            for (let blockNumber = this.lastBlock; blockNumber < web3.eth.blockNumber; blockNumber++) {
+              logger.info(`processing block ${blockNumber} of ${web3.eth.blockNumber}`);
+              this.ethWatcher(null, blockNumber);
+            }
           }
-        }
-        this.ethFilter.watch(this.ethWatcher.bind(this));
+          this.ethFilter.watch(this.ethWatcher.bind(this));
+        });
         break;
       default:
         this._client = new Bitcoin.Client(this.config.rpc);

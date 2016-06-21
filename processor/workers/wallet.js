@@ -170,6 +170,7 @@ export class WalletWorker extends BaseWorker {
       let curr = this.config.currencies[currId];
       let amount = Math.round(parseFloat(params.amount) * Math.pow(10, 8));
       let price = Math.round(parseFloat(params.price) * Math.pow(10, 8));
+      if (!amount || amount < 0 || !price || price < 0) return logger.error('bad order');
       let marketAmount = Math.round(parseFloat(params.amount) * parseFloat(params.price) * Math.pow(10, 8));
       let preciseMarketAmount = Math.round(parseFloat(marketAmount.toPrecision(8)));
       let longAmount = Long.fromNumber(params.buy ? preciseMarketAmount : amount);
@@ -408,12 +409,16 @@ export class WalletWorker extends BaseWorker {
       logger.info(`Withdrawal of ${amount} to ${wd.address}`);
 
       // TODO: actually send funds
-      client.sendToAddress(wd.address, amount, (err, result) => {
-        console.log(result);
-        wd.txid = result;
-        wd.state = 'done';
-        wd.save();
-      });
+      try {
+        client.sendToAddress(wd.address, amount, (err, result) => {
+          console.log(result);
+          wd.txid = result;
+          wd.state = 'done';
+          wd.save();
+        });
+      } catch (error) {
+        logger.error('_processWithdrawal error', error);
+      }
     });
   }
 

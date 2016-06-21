@@ -29,7 +29,7 @@ export const OrderSchema = new mongoose.Schema({
 OrderSchema.statics = {};
 OrderSchema.methods = {
   process: function(callback) {
-    if (!this.price) return callback(new Error('zero-priced order!'));
+    if (!this.price || this.price.lessThanOrEqual(Long.fromNumber(0))) return callback(new Error('bad order'));
     this.findMatches((err, matches) => {
       if (err) return logger.error(err);
       if (!matches.length) {
