@@ -38,6 +38,7 @@ WithdrawalSchema.statics = {
 
 WithdrawalSchema.methods = {
   verify: function(callback) {
+    if (this.amount.lessThanOrEqual(Long.fromNumber(0))) return callback(new Error('negative'));
     Balance.findOne({
       userId: this.userId,
       currId: this.currId,
