@@ -43,7 +43,7 @@ WithdrawalSchema.methods = {
       currId: this.currId,
       amount: { $gte: this.amount }
     }, (err, balance) => {
-      if (err) return logger.error(err);
+      if (err) logger.error(err);
       callback(err, balance);
     });
   },

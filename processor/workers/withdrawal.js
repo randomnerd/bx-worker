@@ -40,7 +40,9 @@ export class WithdrawalWorker extends BaseWorker {
     this._setStatePending(id, (err, obj) => {
       if (err) return logger.error(err);
       if (!obj) return;
-      obj.doBalanceChange();
+      obj.verify((err, balance) => {
+        obj.doBalanceChange();
+      })
     });
   }
 
