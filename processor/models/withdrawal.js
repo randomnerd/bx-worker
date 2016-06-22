@@ -57,7 +57,7 @@ WithdrawalSchema.methods = {
 
   doBalanceChange: function() {
     Currency.balanceFor(this.currId, this.userId, (err, balance) => {
-      balance.change(this);
+      if (balance.amount >= this.amount) balance.change(this);
     });
   },
 

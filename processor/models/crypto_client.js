@@ -50,8 +50,9 @@ export default class CryptoClient {
   }
 
   initClient() {
-    switch (this.type) {
-      case 'eth':
+    try {
+      switch (this.type) {
+        case 'eth':
         let web3 = this._client = new Web3();
         let url = `http://${this.config.rpc.host}:${this.config.rpc.port}`;
         web3.setProvider(new web3.providers.HttpProvider(url));
@@ -59,7 +60,7 @@ export default class CryptoClient {
         Setting.get('ethLastBlock').then((ethLastBlock) => {
           this.lastBlock = ethLastBlock ? ethLastBlock.value : 0;
           logger.info(`Last processed eth block: ${this.lastBlock}, latest ethereum block: ${web3.eth.blockNumber}`);
-          if (this.lastBlock < web3.eth.blockNumber) {
+          if (this.lastBlock < web3.eth.blockNumber && !process.env.ETH_CATCHUP) {
             logger.info('last processed block is too old, catching up');
             for (let blockNumber = this.lastBlock; blockNumber < web3.eth.blockNumber; blockNumber++) {
               logger.info(`processing block ${blockNumber} of ${web3.eth.blockNumber}`);
@@ -69,66 +70,95 @@ export default class CryptoClient {
           this.ethFilter.watch(this.ethWatcher.bind(this));
         });
         break;
-      default:
+        default:
         this._client = new Bitcoin.Client(this.config.rpc);
         break;
+      }
+    } catch (error) {
+      logger.error('initClient', error);
+      callback(error);
     }
   }
 
   getBalance(callback) {
-    switch (this.type) {
-      case 'eth':
+    try {
+      switch (this.type) {
+        case 'eth':
         callback(null, this._client.eth.getBalance(this._client.eth.coinbase).toNumber());
         break;
-      default:
+        default:
         this._client.getBalance(callback);
         break;
+      }
+    } catch (error) {
+      logger.error('getBalance', error);
+      callback(error);
     }
   }
 
   getNewAddress(callback) {
-    switch (this.type) {
-      case 'eth':
+    try {
+      switch (this.type) {
+        case 'eth':
         let key = this.ethKeyStore.newAccount();
         callback(null, "0x" + key.address, key.secretKey.toString('hex'));
         break;
-      default:
+        default:
         this._client.getNewAddress(callback);
         break;
+      }
+    } catch (error) {
+      logger.error('getNewAddress', error);
+      callback(error);
     }
   }
 
   listTransactions(numConf, batch, skip, callback) {
-    switch (this.type) {
-      case 'eth':
+    try {
+      switch (this.type) {
+        case 'eth':
         // stub
         break;
-      default:
+        default:
         this._client.listTransactions(numConf, batch, skip, callback);
         break;
+      }
+    } catch (error) {
+      logger.error('listTransactions', error);
+      callback(error);
     }
   }
 
   sendToAddress(address, amount, callback) {
-    switch (this.type) {
-      case 'eth':
+    try {
+      switch (this.type) {
+        case 'eth':
         let txid = this._client.eth.sendTransaction({to: address, value: amount});
         txid ? callback(null, txid) : callback(new Error('unable to send transaction'));
         break;
-      default:
+        default:
         this._client.sendToAddress(address, amount, callback);
         break;
+      }
+    } catch (error) {
+      logger.error('sendToAddress', error);
+      callback(error);
     }
   }
 
   getTransaction(txid, callback) {
-    switch (this.type) {
-      case 'eth':
+    try {
+      switch (this.type) {
+        case 'eth':
         callback(null, this._client.eth.getTransaction(txid));
         break;
-      default:
+        default:
         this._client.getTransaction(txid, callback);
         break;
+      }
+    } catch (error) {
+      logger.error('getTransaction', error);
+      callback(error);
     }
   }
 }
