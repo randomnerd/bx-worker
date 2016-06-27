@@ -1,12 +1,14 @@
 import mongoose from 'mongoose';
 require('mongoose-long')(mongoose);
 let Long = mongoose.Types.Long;
+import Random from 'meteor-random';
 import async from 'async';
 import Big from 'big.js';
 import {TradePair} from './trade_pair';
 import {Balance} from './balance';
 import {Order} from './order';
 import {Currency} from './currency';
+import {ChartItem} from './chart_item';
 import logger from '../logger';
 
 export const TradeSchema = new mongoose.Schema({
@@ -116,8 +118,25 @@ TradeSchema.methods = {
   },
 
   updateChart: function(callback) {
-    // STUB
-    callback(null);
+    let interval = ChartItem.groupInterval();
+    let {pairId, createdAt} = this;
+    let time = new Date(Math.floor(createdAt / interval) * interval);
+    ChartItem.findOrCreate({pairId, time}, {
+      _id:    Random.id(),
+      open:   this.price,
+      high:   this.price,
+      low:    this.price,
+      close:  this.price,
+      volume: Long.fromNumber(0)
+    }, (err, item) => {
+      logger.info('updateChart', err, item);
+      if (err) return callback(err);
+      if (item.high.lessThan(this.price))   item.high = this.price;
+      if (item.low.greaterThan(this.price)) item.low  = this.price;
+      item.close = this.price;
+      item.volume.add(this.amount);
+      item.save(callback);
+    })
   },
 
   notifyUsers: function(callback) {
