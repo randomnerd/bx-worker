@@ -129,12 +129,11 @@ TradeSchema.methods = {
       close:  this.price,
       volume: Long.fromNumber(0)
     }, (err, item) => {
-      logger.info('updateChart', err, item);
       if (err) return callback(err);
       if (item.high.lessThan(this.price))   item.high = this.price;
       if (item.low.greaterThan(this.price)) item.low  = this.price;
       item.close = this.price;
-      item.volume.add(this.amount);
+      item.volume = item.volume.add(this.amount);
       item.save(callback);
     })
   },
