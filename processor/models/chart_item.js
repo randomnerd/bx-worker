@@ -15,7 +15,7 @@ export const ChartItemSchema = new mongoose.Schema({
 
 ChartItemSchema.statics = {
   groupInterval: function() {
-    return 15 * 60 * 1000; // 15 minutes
+    return 1 * 60 * 1000; // 1 minute
   }
 };
 ChartItemSchema.methods = {};
