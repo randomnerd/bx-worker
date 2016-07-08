@@ -312,7 +312,7 @@ export class WalletWorker extends BaseWorker {
   _processDeposits(id, skip = 0, batch = 50) {
     let client = this.clients[id];
 
-    client.listTransactions(null, batch, skip, (err, result) => {
+    client.listTransactions('', batch, skip, (err, result) => {
       if (err) return logger.error(err);
       if (!result.transactions || result.transactions.length === 0) return;
 

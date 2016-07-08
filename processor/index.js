@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+mongoose.Promise = require('bluebird');
 require('mongoose-long')(mongoose);
 import JobCollection from 'meteor-job';
 import {WalletWorker} from './workers/wallet';
