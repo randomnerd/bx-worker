@@ -100,12 +100,15 @@ export default class CryptoClient {
     try {
       switch (this.type) {
         case 'eth':
-        let key = this.ethKeyStore.newAccount();
-        callback(null, "0x" + key.address, key.secretKey.toString('hex'));
-        break;
+          let key = this.ethKeyStore.newAccount();
+          callback(null, "0x" + key.address, key.secretKey.toString('hex'));
+          break;
         default:
-        this._client.getNewAddress(callback);
-        break;
+          this._client.getNewAddress((err, address, secret) => {
+            console.log(err, address, secret);
+            callback(err, address);
+          });
+          break;
       }
     } catch (error) {
       logger.error('getNewAddress', error);
