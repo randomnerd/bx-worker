@@ -24,6 +24,7 @@ export default class CryptoClient {
   }
 
   ethWatcher(error, log) {
+    console.log('ethWatcher', error, log);
     if (error) return logger.error(error);
     let block = this._client.eth.getBlock(log, true);
     if (!block) return;
@@ -53,26 +54,26 @@ export default class CryptoClient {
     try {
       switch (this.type) {
         case 'eth':
-        let web3 = this._client = new Web3();
-        let url = `http://${this.config.rpc.host}:${this.config.rpc.port}`;
-        web3.setProvider(new web3.providers.HttpProvider(url));
-        this.ethFilter = web3.eth.filter('latest');
-        Setting.get('ethLastBlock').then((ethLastBlock) => {
-          this.lastBlock = ethLastBlock ? ethLastBlock.value : 0;
-          logger.info(`Last processed eth block: ${this.lastBlock}, latest ethereum block: ${web3.eth.blockNumber}`);
-          if (this.lastBlock < web3.eth.blockNumber && !process.env.ETH_CATCHUP) {
-            logger.info('last processed block is too old, catching up');
-            for (let blockNumber = this.lastBlock; blockNumber < web3.eth.blockNumber; blockNumber++) {
-              logger.info(`processing block ${blockNumber} of ${web3.eth.blockNumber}`);
-              this.ethWatcher(null, blockNumber);
+          let web3 = this._client = new Web3();
+          let url = `http://${this.config.rpc.host}:${this.config.rpc.port}`;
+          web3.setProvider(new web3.providers.HttpProvider(url));
+          this.ethFilter = web3.eth.filter('latest');
+          Setting.get('ethLastBlock').then((ethLastBlock) => {
+            this.lastBlock = ethLastBlock ? ethLastBlock.value : 0;
+            logger.info(`Last processed eth block: ${this.lastBlock}, latest ethereum block: ${web3.eth.blockNumber}`);
+            if (this.lastBlock < web3.eth.blockNumber && !process.env.ETH_CATCHUP) {
+              logger.info('last processed block is too old, catching up');
+              for (let blockNumber = this.lastBlock; blockNumber < web3.eth.blockNumber; blockNumber++) {
+                logger.info(`processing block ${blockNumber} of ${web3.eth.blockNumber}`);
+                this.ethWatcher(null, blockNumber);
+              }
             }
-          }
-          this.ethFilter.watch(this.ethWatcher.bind(this));
-        });
-        break;
+            this.ethFilter.watch(this.ethWatcher.bind(this));
+          });
+          break;
         default:
-        this._client = new Bitcoin.Client(this.config.rpc);
-        break;
+          this._client = new Bitcoin.Client(this.config.rpc);
+          break;
       }
     } catch (error) {
       logger.error('initClient', error);
@@ -84,11 +85,11 @@ export default class CryptoClient {
     try {
       switch (this.type) {
         case 'eth':
-        callback(null, this._client.eth.getBalance(this._client.eth.coinbase).toNumber());
-        break;
+          callback(null, this._client.eth.getBalance(this._client.eth.coinbase).toNumber());
+          break;
         default:
-        this._client.getBalance(callback);
-        break;
+          this._client.getBalance(callback);
+          break;
       }
     } catch (error) {
       logger.error('getBalance', error);
@@ -120,11 +121,11 @@ export default class CryptoClient {
     try {
       switch (this.type) {
         case 'eth':
-        // stub
-        break;
+          // stub
+          break;
         default:
-        this._client.listTransactions(numConf, batch, skip, callback);
-        break;
+          this._client.listTransactions(numConf, batch, skip, callback);
+          break;
       }
     } catch (error) {
       logger.error('listTransactions', error);
@@ -136,12 +137,12 @@ export default class CryptoClient {
     try {
       switch (this.type) {
         case 'eth':
-        let txid = this._client.eth.sendTransaction({to: address, value: amount});
-        txid ? callback(null, txid) : callback(new Error('unable to send transaction'));
-        break;
+          let txid = this._client.eth.sendTransaction({to: address, value: amount});
+          txid ? callback(null, txid) : callback(new Error('unable to send transaction'));
+          break;
         default:
-        this._client.sendToAddress(address, amount, callback);
-        break;
+          this._client.sendToAddress(address, amount, callback);
+          break;
       }
     } catch (error) {
       logger.error('sendToAddress', error);
@@ -153,11 +154,11 @@ export default class CryptoClient {
     try {
       switch (this.type) {
         case 'eth':
-        callback(null, this._client.eth.getTransaction(txid));
-        break;
+          callback(null, this._client.eth.getTransaction(txid));
+          break;
         default:
-        this._client.getTransaction(txid, callback);
-        break;
+          this._client.getTransaction(txid, callback);
+          break;
       }
     } catch (error) {
       logger.error('getTransaction', error);
