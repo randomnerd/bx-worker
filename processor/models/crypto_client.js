@@ -24,7 +24,6 @@ export default class CryptoClient {
   }
 
   ethWatcher(error, log) {
-    console.log('ethWatcher', error, log);
     if (error) return logger.error(error);
     let block = this._client.eth.getBlock(log, true);
     if (!block) return;
@@ -61,7 +60,7 @@ export default class CryptoClient {
           Setting.get('ethLastBlock').then((ethLastBlock) => {
             this.lastBlock = ethLastBlock ? ethLastBlock.value : 0;
             logger.info(`Last processed eth block: ${this.lastBlock}, latest ethereum block: ${web3.eth.blockNumber}`);
-            if (this.lastBlock < web3.eth.blockNumber && !process.env.ETH_CATCHUP) {
+            if (this.lastBlock < web3.eth.blockNumber && !process.env.ETH_SKIP_CATCHUP) {
               logger.info('last processed block is too old, catching up');
               for (let blockNumber = this.lastBlock; blockNumber < web3.eth.blockNumber; blockNumber++) {
                 logger.info(`processing block ${blockNumber} of ${web3.eth.blockNumber}`);
