@@ -2,7 +2,9 @@ import Random from 'meteor-random';
 import Job from 'meteor-job';
 import {BaseWorker} from './base';
 import _ from 'underscore';
+import notp from 'notp';
 import {Wallet} from '../models/wallet';
+import {User} from '../models/user';
 import {Transaction} from '../models/transaction';
 import {Withdrawal} from '../models/withdrawal';
 import {Order} from '../models/order';
@@ -270,7 +272,7 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[currId];
     Transaction.find({
       currId: currId,
-      confirmations: { $lt: client.confReq },
+      // confirmations: { $lt: client.confReq },
       balanceChangeId: null
     }, (err, txs) => {
       for (let tx of txs) {
@@ -312,11 +314,12 @@ export class WalletWorker extends BaseWorker {
   _processDeposits(id, skip = 0, batch = 50) {
     let client = this.clients[id];
 
-    client.listTransactions('', batch, skip, (err, result) => {
+    client.listTransactions('', batch, skip, (err, transactions) => {
+      logger.info('listTransactions', err, transactions);
       if (err) return logger.error(err);
-      if (!result.transactions || result.transactions.length === 0) return;
+      if (!transactions || transactions.length === 0) return;
 
-      let txids = _.uniq(_.pluck(result.transactions, 'txid'));
+      let txids = _.uniq(_.pluck(transactions, 'txid'));
       // check if those ids are already in database
       Transaction.find({txid: {$in: txids}}, (e, foundTxs) => {
         // stop processing if transaction has been processed already
@@ -331,7 +334,7 @@ export class WalletWorker extends BaseWorker {
         // - select distinct on txid
         let foundIds = _.pluck(foundTxs, 'txid');
         let newTxids = [];
-        let txs = _.reduce(result.transactions, (memo, tx) => {
+        let txs = _.reduce(transactions, (memo, tx) => {
           if (tx.category !== 'receive') return memo;
           if (_.contains(foundIds, tx.txid)) return memo;
           if (_.contains(newTxids, tx.txid)) return memo;
@@ -356,7 +359,9 @@ export class WalletWorker extends BaseWorker {
   }
 
   _processDepositTx(client, tx) {
+    logger.info('_processDepositTx', tx);
     client.getTransaction(tx.txid, (err, result) => {
+      // logger.info('getTransaction', err, result);
       if (err) {
         if (err.code != -32602) {
           // dont log too fast requests error
@@ -370,6 +375,9 @@ export class WalletWorker extends BaseWorker {
         if (rawtx.category !== 'receive') continue;
 
         Wallet.findOne({address: rawtx.address}, (e, wallet) => {
+          logger.info('findWallet', wallet._doc);
+          rawtx.txid = tx.txid;
+          rawtx.confirmations = tx.confirmations;
           this._newDeposit(rawtx, wallet, client.confReq);
         });
       }
@@ -382,19 +390,26 @@ export class WalletWorker extends BaseWorker {
   }
 
   sendFunds(job, callback) {
-    let curr = this.config.currencies[job.data.currId];
-    let client = this.clients[job.data.currId];
+    let {currId, totp, wdId} = job.data;
+    let curr = this.config.currencies[currId];
+    let client = this.clients[currId];
+
     if (!curr || !client) {
       job.fail('Currency not configured');
       return callback();
     }
 
-    logger.info('Withdrawal', job.data.wdId);
+    logger.info('Withdrawal', wdId);
     try {
-      Withdrawal.findOne({_id: job.data.wdId, state: 'applied'}, (err, wd) => {
-        this._processWithdrawal(curr, client, wd);
+      Withdrawal.findOne({_id: wdId, state: 'applied'}, (err, wd) => {
+        let userId = wd.userId;
+        User.findOne({_id: wd.userId}, (userErr, user) => {
+          if (userErr || !user) return job.fail('user not found');
+          if (!notp.totp.verify(totp, user.totpKey)) return job.fail('wrong totp');
+          this._processWithdrawal(curr, client, wd);
+          job.done();
+        });
       });
-      job.done();
     } catch (e) {
       logger.error('Processing job', job, 'failed:', e.toString());
       job.fail(e.toString());

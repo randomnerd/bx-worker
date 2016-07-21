@@ -24,6 +24,7 @@ export const TransactionSchema = new mongoose.Schema({
 
 TransactionSchema.statics = {
   newDeposit: function(tx, wallet, confReq) {
+    logger.info('newDeposit', tx, wallet._doc, confReq);
     // save deposit
     let amount = tx.amount || tx.value;
     if (amount.s) {
@@ -45,11 +46,14 @@ TransactionSchema.statics = {
       createdAt:       new Date,
       updatedAt:       null
     });
+
     newTx.save((err) => {
+      logger.info('newTx', newTx, err);
       if (err) {
         logger.error(err.errors);
         return logger.error(err);
       }
+
       newTx.notifyUser();
       if (newTx.confirmations >= confReq) newTx.matureDeposit();
     });
