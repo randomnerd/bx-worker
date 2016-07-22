@@ -315,7 +315,6 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[id];
 
     client.listTransactions('', batch, skip, (err, transactions) => {
-      logger.info('listTransactions', err, transactions);
       if (err) return logger.error(err);
       if (!transactions || transactions.length === 0) return;
 
@@ -361,7 +360,6 @@ export class WalletWorker extends BaseWorker {
   _processDepositTx(client, tx) {
     logger.info('_processDepositTx', tx);
     client.getTransaction(tx.txid, (err, result) => {
-      // logger.info('getTransaction', err, result);
       if (err) {
         if (err.code != -32602) {
           // dont log too fast requests error
@@ -375,7 +373,6 @@ export class WalletWorker extends BaseWorker {
         if (rawtx.category !== 'receive') continue;
 
         Wallet.findOne({address: rawtx.address}, (e, wallet) => {
-          logger.info('findWallet', wallet._doc);
           rawtx.txid = tx.txid;
           rawtx.confirmations = tx.confirmations;
           this._newDeposit(rawtx, wallet, client.confReq);
