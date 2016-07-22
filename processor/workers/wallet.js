@@ -398,9 +398,8 @@ export class WalletWorker extends BaseWorker {
     logger.info('Withdrawal', wdId);
     try {
       Withdrawal.findOne({_id: wdId, state: 'applied'}, (err, wd) => {
-          this._processWithdrawal(curr, client, wd);
-          job.done();
-        });
+        this._processWithdrawal(curr, client, wd);
+        job.done();
       });
     } catch (e) {
       logger.error('Processing job', job, 'failed:', e.toString());
