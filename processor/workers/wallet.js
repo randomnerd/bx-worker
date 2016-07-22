@@ -2,7 +2,6 @@ import Random from 'meteor-random';
 import Job from 'meteor-job';
 import {BaseWorker} from './base';
 import _ from 'underscore';
-import notp from 'notp';
 import {Wallet} from '../models/wallet';
 import {User} from '../models/user';
 import {Transaction} from '../models/transaction';
@@ -399,10 +398,6 @@ export class WalletWorker extends BaseWorker {
     logger.info('Withdrawal', wdId);
     try {
       Withdrawal.findOne({_id: wdId, state: 'applied'}, (err, wd) => {
-        let userId = wd.userId;
-        User.findOne({_id: wd.userId}, (userErr, user) => {
-          if (userErr || !user) return job.fail('user not found');
-          if (!notp.totp.verify(totp, user.totpKey)) return job.fail('wrong totp');
           this._processWithdrawal(curr, client, wd);
           job.done();
         });
