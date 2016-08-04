@@ -4,7 +4,7 @@ import KeyStore from 'node-ethereumjs-keystore';
 import {Wallet} from './wallet';
 import {Transaction} from './transaction';
 import {Withdrawal} from './withdrawal';
-import {Balance} from './balance';
+import {Balance, Long} from './balance';
 import {BalanceChange} from './balance_change';
 import {Setting} from './setting';
 import logger from '../logger';
@@ -16,9 +16,12 @@ export default class CryptoClient {
     this.type     = config.type;
     this.confReq  = config.confReq;
     this.currName = config.name;
+    this.netFee   = config.netFee || 0;
     if (this.type === 'eth') {
       this.ethKeyStore = new KeyStore();
       this.ethFilter = null;
+      this.gas = config.gas;
+      this.gasPrice = config.gasPrice;
     }
     this.initClient();
   }
@@ -27,16 +30,19 @@ export default class CryptoClient {
     if (error) return logger.error("ethWatcher", error);
     let block = this._client.eth.getBlock(log, true);
     if (!block) return;
-    let {transactions} = block;
+    let {number, transactions} = block;
+    this.moveDeposits(number);
+
     if (!transactions || transactions.length === 0) return;
     for (let tx of transactions) {
       let {blockNumber, hash, from, to, value} = tx;
       if (value.toNumber() === 0) continue;
       Transaction.findOne({
-        txid: hash
+        txid:   hash,
+        currId: this.currId
       }).then((found) => {
         if (found) return logger.error('tx already in db', txError, found);
-        return Wallet.findOne({address: to});
+        return Wallet.findOne({currId: this.currId, address: to});
       }).then((wallet) => {
         if (!wallet) return false;
         logger.info(`Incoming tx to ${to}: ${value.toNumber() / Math.pow(10, 18)} (${hash})`)
@@ -47,6 +53,47 @@ export default class CryptoClient {
       this.lastBlock = block.number;
       Setting.set('ethLastBlock', block.number);
     }
+  }
+
+  moveDeposits(blockNumber) {
+    Transaction.aggregate([
+      {
+        $match: {
+          currId: this.currId,
+          moved: { $ne: true },
+          balanceChangeId: { $ne: null },
+          amount: { $gt: this.netFee * 10 }
+        }
+      },
+      {
+        $group: {
+          _id: "$walletId",
+          amount: { $sum: "$amount" }
+        }
+      }
+    ]).then((items) => {
+      for (let item of items) {
+        Wallet.findOne({_id: item._id}).then((wallet) => {
+          let {address, secret} = wallet;
+          this.ethKeyStore.importKey(secret);
+          let gas = Long.fromNumber(this.gas);
+          let gasPrice = Long.fromNumber(this.gasPrice);
+          let fee = gas.mul(gasPrice);
+          let rawTx = {
+            to:   this.hotAddress,
+            from: address,
+            gas:  this.gas.toString(16),
+            gasPrice: this.gasPrice.toString(16),
+            amount: item.amount.subtract(fee)
+          }
+          let signedTx = this.ethKeyStore.signTransaction(txParams);
+          this._client.eth.sendRawTransaction(signedTx, (error, hash) => {
+            if (error) return logger.error("moveDeposit", error);
+            logger.info(`Stashed ${item.amount.toNumber()/Math.pow(10,8)} from ${address} to the hot wallet`);
+          })
+        });
+      }
+    });
   }
 
   initClient() {

@@ -19,7 +19,8 @@ export const TransactionSchema = new mongoose.Schema({
   amount:          mongoose.Schema.Types.Long,
   changed:         mongoose.Schema.Types.Long,
   createdAt:       Date,
-  updatedAt:       Date
+  updatedAt:       Date,
+  moved:           Boolean
 });
 
 TransactionSchema.statics = {
@@ -43,7 +44,8 @@ TransactionSchema.statics = {
       confirmations:   Math.abs(tx.confirmations || 1),
       amount:          amount,
       createdAt:       new Date,
-      updatedAt:       null
+      updatedAt:       null,
+      moved:           false
     });
 
     newTx.save((err) => {
