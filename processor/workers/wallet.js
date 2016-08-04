@@ -411,7 +411,7 @@ export class WalletWorker extends BaseWorker {
     console.log('processWithdrawal');
     wd.verifyBalanceChange((err, bc) => {
       if (err) return logger.error("_processWithdrawal", err);
-      let amount = wd.amount / Math.pow(10, 8);
+      let amount = wd.amount - (client.curr.withdrawalFee || 0) / Math.pow(10, 8);
       logger.info(`Withdrawal of ${amount} to ${wd.address}`);
 
       // TODO: actually send funds
