@@ -38,7 +38,7 @@ export class WithdrawalWorker extends BaseWorker {
   processWithdrawal(id) {
     logger.info(`${this.name}: Processing Withdrawal ${id}`);
     this._setStatePending(id, (err, obj) => {
-      if (err) return logger.error(err);
+      if (err) return logger.error("processWithdrawal", err);
       if (!obj) return;
       obj.verify((err, balance) => {
         obj.doBalanceChange();

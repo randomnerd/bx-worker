@@ -54,10 +54,10 @@ BalanceSchema.methods = {
       state:     'initial'
     });
     change.save((err) => {
-      if (err) return logger.error(err);
+      if (err) return logger.error("changeWithTx.change.save", err);
       tx.balanceChangeId = change._id;
       tx.save((e) => {
-        if (e) return logger.error(e);
+        if (e) return logger.error("changeWithTx.tx.save", e);
         if (callback) callback(null);
       });
     });
@@ -82,10 +82,10 @@ BalanceSchema.methods = {
       state:     'initial'
     });
     change.save((err) => {
-      if (err) return logger.error(err);
+      if (err) return logger.error("changeWithWithdrawal.change.save", err);
       wd.balanceChangeId = change._id;
       wd.save((e) => {
-        if (e) return logger.error(e);
+        if (e) return logger.error("changeWithWithdrawal.withdrawal.save", e);
         if (callback) callback(null);
       });
     });

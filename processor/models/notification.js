@@ -22,7 +22,7 @@ NotificationSchema.statics = {
       createdAt: new Date()
     });
     notification.save((err) => {
-      if (err) logger.error(err);
+      if (err) logger.error("notification.save", err);
     });
   }
 };

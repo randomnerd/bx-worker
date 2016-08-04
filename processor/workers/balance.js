@@ -46,7 +46,7 @@ export class BalanceWorker extends BaseWorker {
   processChange(id) {
     logger.info(`${this.name}: Processing BalanceChange ${id}`);
     this._setChangePending(id, (err, change) => {
-      if (err) return logger.error(err);
+      if (err) return logger.error("processChange", err);
       if (!change) return;
       this._applyChange(change);
     });
@@ -126,7 +126,7 @@ export class BalanceWorker extends BaseWorker {
       (cb) => { this._setChangeDone(change._id, cb); },
       (cb) => { Currency.findOne(change.currId, cb); }
     ], (err, result) => {
-      if (err) return logger.error(err);
+      if (err) return logger.error("_applyChange", err);
       let uids = _.compact(_.pluck(_.compact(result), 'userId'));
       let userId = uids.length && uids[0];
       if (!userId) return logger.error('No userId found');

@@ -48,8 +48,7 @@ TransactionSchema.statics = {
 
     newTx.save((err) => {
       if (err) {
-        logger.error(err.errors);
-        return logger.error(err);
+        return logger.error("newDeposit.sace", err);
       }
 
       newTx.notifyUser();
@@ -64,7 +63,7 @@ TransactionSchema.methods = {
   },
   notifyUser: function() {
     Currency.findOne({_id: this.currId}, (err, curr) => {
-      if (err) return logger.error(err);
+      if (err) return logger.error("notifyUser.findCurrency", err);
       Notification.notify(
         this.userId,
         `Incoming: ${this.displayAmount()} ${curr.shortName}`,
@@ -84,7 +83,7 @@ TransactionSchema.methods = {
       }
     } else {
       client.getTransaction(this.txid, (err, txdata) => {
-        if (err) return logger.error(err);
+        if (err) return logger.error("updateConfirmations.getTransaction", err);
         if (txdata.confirmations === this.confirmations || !txdata.confirmations) return;
 
         this.confirmations = txdata.confirmations;

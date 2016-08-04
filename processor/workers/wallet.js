@@ -157,7 +157,7 @@ export class WalletWorker extends BaseWorker {
             state:     'done'
           });
           change.save((changeSaveErr) => {
-            if (changeSaveErr) logger.error(changeSaveErr);
+            if (changeSaveErr) logger.error("_cancelOrder: save change", changeSaveErr);
           });
         })
       })
@@ -314,7 +314,7 @@ export class WalletWorker extends BaseWorker {
     let client = this.clients[id];
 
     client.listTransactions('', batch, skip, (err, transactions) => {
-      if (err) return logger.error(err);
+      if (err) return;// logger.error("listTransactions", err);
       if (!transactions || transactions.length === 0) return;
 
       let txids = _.uniq(_.pluck(transactions, 'txid'));
@@ -410,7 +410,7 @@ export class WalletWorker extends BaseWorker {
   _processWithdrawal(curr, client, wd) {
     console.log('processWithdrawal');
     wd.verifyBalanceChange((err, bc) => {
-      if (err) return logger.error(err);
+      if (err) return logger.error("_processWithdrawal", err);
       let amount = wd.amount / Math.pow(10, 8);
       logger.info(`Withdrawal of ${amount} to ${wd.address}`);
 

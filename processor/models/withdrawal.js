@@ -30,7 +30,7 @@ WithdrawalSchema.statics = {
     }, {
       $set: { state: 'applied' }
     }, (e, wd) => {
-      if (e) return logger.error(e);
+      if (e) return logger.error("withdrawal.balanceChanged.find", e);
       wd.sendFunds();
     });
   }
@@ -44,7 +44,7 @@ WithdrawalSchema.methods = {
       currId: this.currId,
       amount: { $gte: this.amount }
     }, (err, balance) => {
-      if (err) logger.error(err);
+      if (err) logger.error("Withdrawal.verify", err);
       callback(err, balance);
     });
   },
@@ -63,7 +63,7 @@ WithdrawalSchema.methods = {
 
   sendFunds: function() {
     this.verifyBalanceChange((err) => {
-      if (err) return logger.error(err);
+      if (err) return logger.error("sendFunds: verifyBalanceChange", err);
       let job = new Job('jobQueue', 'sendFunds', {currId: this.currId, wdId: this._id});
       job.save();
     });

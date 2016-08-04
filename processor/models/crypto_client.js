@@ -24,7 +24,7 @@ export default class CryptoClient {
   }
 
   ethWatcher(error, log) {
-    if (error) return logger.error(error);
+    if (error) return logger.error("ethWatcher", error);
     let block = this._client.eth.getBlock(log, true);
     if (!block) return;
     let {transactions} = block;
@@ -91,7 +91,7 @@ export default class CryptoClient {
           break;
       }
     } catch (error) {
-      logger.error('getBalance', error);
+      // logger.error('getBalance', error);
       callback(error);
     }
   }
@@ -127,7 +127,7 @@ export default class CryptoClient {
           break;
       }
     } catch (error) {
-      logger.error('listTransactions', error);
+      // logger.error('listTransactions', error);
       callback(error);
     }
   }
