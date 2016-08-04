@@ -56,6 +56,7 @@ export default class CryptoClient {
   }
 
   moveDeposits(blockNumber) {
+    logger.info('moveDeposits', blockNumber);
     Transaction.aggregate([
       {
         $match: {
@@ -72,6 +73,7 @@ export default class CryptoClient {
         }
       }
     ]).then((items) => {
+      logger.info('moveDeposits.aggregate', items);
       for (let item of items) {
         Wallet.findOne({_id: item._id}).then((wallet) => {
           let {address, secret} = wallet;
