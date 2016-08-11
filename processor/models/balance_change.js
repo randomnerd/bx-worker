@@ -46,7 +46,7 @@ BalanceChangeSchema.methods = {
       this.updatedAt = new Date;
       this.save(callback);
       this.getSubject((e, subject) => {
-        subject.changed = balance.amount + balance.held;
+        subject.changed = balance.amount.add(balance.held);
         subject.updatedAt = new Date;
         subject.save();
       });
