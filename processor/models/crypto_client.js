@@ -54,7 +54,7 @@ export default class CryptoClient {
     }
     if (this.lastBlock < block.number) {
       this.lastBlock = block.number;
-      Setting.set('ethLastBlock', block.number);
+      Setting.set('ethLastBlock_' + this.currId, block.number);
     }
   }
 
